@@ -1,16 +1,4 @@
-# Haskell (Cabal)
-dist-newstyle/
-dist/
-cabal.project.local
-*.hi
-*.o
 
 # Elm
 elm-stuff/
 main.js
-0.19.1/d.dat
-0.19.1/i.dat
-0.19.1/lock
-0.19.1/Main.elmi
-0.19.1/Main.elmo
-0.19.1/o.dat
