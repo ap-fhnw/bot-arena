@@ -1,18 +1,14 @@
 module Main exposing (main)
 
 import Browser
-import Html exposing (Html, main_, div, table, text, textarea, button)
-import Html.Attributes exposing (style, type_, rows, attribute)
-import Html.Events exposing (onInput, onClick)
+import Html exposing (Html)
 
-import Model exposing (World, Obj(..), Instr(..))
+import Model exposing (..)
 import Parse exposing (parseBotScript)
 import Engine exposing (tick)
-import View exposing (renderRow, showProgram)
+import View exposing (renderView)
 
 -- MODEL
-
-type alias Model = { script : String, world : World }
 
 init : Model
 init =
@@ -34,42 +30,9 @@ init =
 -- VIEW
 
 view : Model -> Html Msg
-view model = main_
-    [ style "display" "grid"
-    , style "gap" ".5em"
-    , style "padding" "1em"
-    ]
-    [ textarea
-        [ onInput UpdateScript
-        , rows 10
-        , attribute "cols" "50"
-        ] []
-    , button
-        [ onClick StoreScript
-        , type_ "submit"
-        ] [ text "Store" ]
-    , Html.pre
-        [] [ text model.script ]
-    , Html.pre
-        [] (List.map (\b -> text (showProgram b.pc b.program)) model.world.bots)  
-    , div []
-        [ table
-            [ style "border-collapse" "collapse"
-            , style "margin" "auto"
-            ]
-            ((List.range 0 (Tuple.second model.world.arena.size))
-                |> List.map (renderRow model.world))
-        ]
-    , div []
-        [ button [ onClick RunStep ] [ text "Run Step" ]
-        ]
-    ]
+view = renderView
 
 -- UPDATE
-
-type Msg = UpdateScript String
-    | StoreScript
-    | RunStep
 
 update : Msg -> Model -> Model
 update msg model = case msg of
