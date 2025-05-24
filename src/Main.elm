@@ -3,23 +3,28 @@ module Main exposing (main)
 import Browser
 import Html exposing (Html, div, table, tr, td, text)
 import Html.Attributes exposing (style)
-
+import Model exposing (World)
 
 -- MODEL
 
 type Cell = Empty | Bot1 | Bot2
 
-type alias Model =
-    List (List Cell)
+type alias Model = World
 
 -- Grid definition
 init : Model
-init =
-    [ [ Empty, Empty, Bot1, Empty ]
-    , [ Empty, Bot2, Empty, Empty ]
-    , [ Empty, Empty, Empty, Empty ]
-    ]
-
+init = { 
+    tick = 0, 
+    queue = [],
+    bots = [],
+    arena = {
+        size = (3, 10),
+        goAround = False,
+        maxHp = 10,
+        seed = 0,
+        objects = []
+        }
+    }
 
 -- VIEW
 
@@ -53,9 +58,10 @@ view model =
             [ style "border-collapse" "collapse"
             , style "margin" "auto"
             ]
-            (List.map renderRow model)
+            (List.map renderRow ((List.repeat
+                (Tuple.first model.arena.size)
+                (List.repeat (Tuple.second model.arena.size) Empty))))
         ]
-
 
 -- MAIN
 
