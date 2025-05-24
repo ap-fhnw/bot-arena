@@ -1,9 +1,3 @@
-# Haskell (Cabal)
-dist-newstyle/
-dist/
-cabal.project.local
-*.hi
-*.o
 
 # Elm
 elm-stuff/
