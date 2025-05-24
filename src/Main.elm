@@ -1,94 +1,103 @@
 module Main exposing (main)
 
 import Browser
-import Html exposing (Html, div, table, tr, td, text)
-import Html.Attributes exposing (style)
-import Model exposing (World, Bot, Obj(..), Coord)
+import Html exposing (Html, main_, div, table, text, textarea, button)
+import Html.Attributes exposing (style, type_, rows, attribute)
+import Html.Events exposing (onInput, onClick)
+
+import Model exposing (World, Obj(..), Instr(..))
+import Parse exposing (parseBotScript)
+import Engine exposing (tick)
+import View exposing (renderRow, showProgram)
 
 -- MODEL
 
-type alias Model = World
-type Cell = B Bot | O Obj | Empty
+type alias Model = { script : String, world : World }
 
 init : Model
-init = { 
-    tick = 0, 
-    queue = [],
-    bots = [
-        {
-            id = 1,
-            name = "Foo",
-            pos = (0, 0),
-            dirDeg = 180,
-            hp = 10,
-            program = [],
-            pc = 0,
-            alive = True
-        }
-    ],
-    arena = {
-        size = (10, 10),
-        goAround = False,
-        maxHp = 10,
-        seed = 0,
-        objects = [Wall (2, 2)]
+init =
+    { script = ""
+    , world =
+        { tick = 0
+        , queue = []
+        , bots = []
+        , arena =
+            { size = (10, 10)
+            , goAround = False
+            , maxHp = 10
+            , seed = 0
+            , objects = [ Wall (2, 2), Wall (2, 3) ]
+            }
         }
     }
 
 -- VIEW
 
-getObj : List Obj -> Coord -> Maybe Obj
-getObj os c = case os of
-    [] -> Nothing
-    (o :: oss) -> case o of
-        Wall cc -> if c == cc then Just o else getObj oss c
-        _ -> getObj oss c
-        
-cell : Model -> Coord -> Cell
-cell model coord = case (getObj model.arena.objects coord) of
-    Just o -> O o
-    Nothing -> Empty
-
-renderCell : Model -> Coord -> Html msg
-renderCell model coord =
-    let content = case cell model coord of
-                Empty -> "."
-                O o  -> "🧱"
-                _ -> "?"
-    in
-    td
-        [ style "padding" "10px"
-        , style "text-align" "center"
-        , style "border" "1px solid black"
-        , style "width" "40px"
-        , style "height" "40px"
-        ]
-        [ text content ]
-
-
-renderRow : Model -> Int -> Html msg
-renderRow model row =
-    tr [] ((List.range 0 (Tuple.second model.arena.size))
-        |> List.map (\i -> (row, i))
-        |> List.map (renderCell model))
-
-view : Model -> Html msg
-view model =
-    div []
+view : Model -> Html Msg
+view model = main_
+    [ style "display" "grid"
+    , style "gap" ".5em"
+    , style "padding" "1em"
+    ]
+    [ textarea
+        [ onInput UpdateScript
+        , rows 10
+        , attribute "cols" "50"
+        ] []
+    , button
+        [ onClick StoreScript
+        , type_ "submit"
+        ] [ text "Store" ]
+    , Html.pre
+        [] [ text model.script ]
+    , Html.pre
+        [] (List.map (\b -> text (showProgram b.pc b.program)) model.world.bots)  
+    , div []
         [ table
             [ style "border-collapse" "collapse"
             , style "margin" "auto"
             ]
-            ((List.range 0 (Tuple.second model.arena.size))
-                |> List.map (renderRow model))
+            ((List.range 0 (Tuple.second model.world.arena.size))
+                |> List.map (renderRow model.world))
         ]
+    , div []
+        [ button [ onClick RunStep ] [ text "Run Step" ]
+        ]
+    ]
+
+-- UPDATE
+
+type Msg = UpdateScript String
+    | StoreScript
+    | RunStep
+
+update : Msg -> Model -> Model
+update msg model = case msg of
+    StoreScript -> { model | world = loadScript model }
+    UpdateScript content -> { model | script = content }
+    RunStep -> { model | world = tick model.world }
+
+loadScript : Model -> World
+loadScript { world, script } =
+    { world | bots = [
+        { id = 1
+        , name = "Foo"
+        , pos = (0, 0)
+        , dirDeg = 180
+        , hp = 10
+        , program = parseBotScript script
+        , pc = 0
+        , alive = True
+        }
+        ]
+    }
 
 -- MAIN
 
-main : Program () Model msg
+main : Program () Model Msg
 main =
     Browser.sandbox
         { init = init
         , view = view
-        , update = \_ model -> model
+        , update = update
         }
