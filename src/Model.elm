@@ -1,4 +1,4 @@
-module Model exposing (World, ArenaConfig, Bot, Obj(..), Coord)
+module Model exposing (World, ArenaConfig, Bot, Obj(..), Coord, Instr(..))
 
 -- Basis-IDs
 type alias BotId     = Int
