@@ -1,5 +1,11 @@
-module Model exposing (World, ArenaConfig, Bot, Obj(..), Coord, Instr(..))
+module Model exposing (..)
 
+type alias Model = { script : String, world : World }
+
+type Msg = UpdateScript String
+    | StoreScript
+    | RunStep
+    
 -- Basis-IDs
 type alias BotId     = Int
 type alias Tick      = Int

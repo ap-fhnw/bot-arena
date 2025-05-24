@@ -1,9 +1,11 @@
-module View exposing (showProgram, renderRow)
+module View exposing (renderView)
+
 import Debug exposing (toString)
 import Html exposing (Html, main_, div, table, tr, td, text, textarea, button)
 import Html.Attributes exposing (style, type_, rows, attribute)
 import Html.Events exposing (onInput, onClick)
 import Model exposing (..)
+import Html.Attributes exposing (spellcheck)
 
 type Cell = B Bot | O Obj | Empty
 
@@ -58,3 +60,67 @@ showProgram : Int -> List Instr -> String
 showProgram pc is = is
     |> List.indexedMap (\i a -> showInstruction a ++ (if i == pc then " <-" else ""))
     |> List.foldr (\a b -> a ++ "\n" ++ b) ""
+
+mainLayout : List (Html.Attribute msg)
+mainLayout =
+    [ style "display" "grid"
+    , style "grid-template" """
+        'editor map' 16em
+        'debug map' auto
+        / 1fr 1fr
+        """
+    , style "grid-template-columns" "1fr auto"
+    , style "gap" ".5em"
+    , style "padding" "2em"
+    ]
+
+renderView : Model -> Html Msg
+renderView model = main_ mainLayout
+    [ div
+        [ style "grid-area" "editor"
+        , style "display" "grid"
+        , style "grid-template-rows" "1fr auto"
+        , style "gap" ".5em"
+        ]
+        [ textarea
+            [ onInput UpdateScript
+            , spellcheck False
+            , style "resize" "none"
+            , style "font-size" "1.5em"
+            , style "padding" "8px"
+            , style "text-transform" "uppercase"
+            ] []
+        , button
+            [ onClick StoreScript
+            , type_ "submit"
+            , style "justify-self" "center"
+            , style "font-size" "1.5em"
+            ] [ text "Store" ]
+        ]
+    , div [ style "grid-area" "debug"
+          , style "font-size" "1.5em"
+        ]
+        [ Html.pre
+            [ style "padding" "1em"
+            , style "background" "whitesmoke"
+            ] (List.map (\b -> text (showProgram b.pc b.program)) model.world.bots)  
+        ]
+    , div
+        [ style "grid-area" "map"
+        , style "display" "flex"
+        , style "flex-direction" "column"
+        , style "align-items" "center"
+        , style "gap" ".5em"
+        ]
+        [ table
+            [ style "border-collapse" "collapse"
+            , style "margin" "auto"
+            ]
+            ((List.range 0 (Tuple.second model.world.arena.size))
+                |> List.map (renderRow model.world))
+        , div []
+            [ button [ onClick RunStep            , style "font-size" "1.5em"
+                     ] [ text "Run Step" ]
+            ]
+        ]
+    ]
