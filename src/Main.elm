@@ -88,6 +88,7 @@ loadScript { world, script } =
         , program = parseBotScript script
         , pc = 0
         , alive = True
+        , viewEnv = []
         }
         ]
     }
