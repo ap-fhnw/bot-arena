@@ -23,6 +23,7 @@ type alias Bot =
     , program    : List Instr       -- Ergebnis des Parsers
     , pc         : Int               -- Program-Counter
     , alive      : Bool
+    , viewEnv        : List (Coord, Obj)
     }
 
 -- Walls, Power-Ups usw. lassen sich später als Objekt-Union anhängen
