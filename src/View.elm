@@ -79,6 +79,9 @@ renderRow world row =
 showInstruction : Instr -> String
 showInstruction i = case i of
     Move n -> "MOVE " ++ toString n
+    Turn n -> "TURN " ++ toString n ++ "°"
+    Scan -> "SCAN"
+    Fire x y -> "FIRE " ++ toString x ++ " " ++ toString y
     _ -> "?"
 
 showProgram : Int -> List Instr -> String

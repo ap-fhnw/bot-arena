@@ -25,6 +25,7 @@ init =
             , program = []
             , pc = 0
             , alive = True
+            , viewEnv = []
             } ]
         , arena =
             { size = (8, 8)

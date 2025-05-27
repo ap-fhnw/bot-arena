@@ -17,7 +17,7 @@ type Instr
     | Turn Int              -- Grad (+ = rechts)
     | Scan                  -- Feld-of-View -> Event
     | Fire Int Int          -- Rel. Koord.
-    | Nothing
+    | NoOp
 
 -- Ein einzelner Bot im Spielzustand
 type alias Bot =
@@ -27,7 +27,7 @@ type alias Bot =
     , dirDeg     : Int               -- 0 = Norden
     , hp         : Int
     , program    : List Instr       -- Ergebnis des Parsers
-    , pc         : Int               -- Program-Counter
+    , pc         : Int              -- Program-Counter
     , alive      : Bool
     , viewEnv    : List (Coord, Obj)
     }
