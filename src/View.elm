@@ -82,7 +82,17 @@ showInstruction i = case i of
     Turn n -> "TURN " ++ toString n ++ "°"
     Scan -> "SCAN"
     Fire x y -> "FIRE " ++ toString x ++ " " ++ toString y
+    Repeat n instr ->
+        "REPEAT " ++ toString n ++ " " ++ showInstruction instr
+
+    IfThenElse cond i1 i2 ->
+        "IF " ++ showCond cond ++ " THEN " ++ showInstruction i1 ++ " ELSE " ++ showInstruction i2
     _ -> "?"
+
+showCond : Cond -> String
+showCond c = case c of
+    EnemyAhead -> "ENEMYAHEAD"
+    LowHp -> "LOWHP"
 
 showProgram : Int -> List Instr -> String
 showProgram pc is = is
