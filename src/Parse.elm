@@ -2,6 +2,17 @@ module Parse exposing (parseBotScript)
 
 import Model exposing (Instr(..))
 
+-- Help functions
+strip : String -> String
+strip str = str |> String.trim
+
+splitWords : String -> List String
+splitWords = String.words
+
+parseInt : String -> Maybe Int
+parseInt = String.toInt
+
+-- Parser 
 parseBotScript : String -> List Instr
 parseBotScript input = String.split "\n" (String.toLower input)
     |> List.map (\l -> case String.split " " l of
