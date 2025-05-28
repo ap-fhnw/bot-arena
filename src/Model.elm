@@ -18,6 +18,12 @@ type Instr
     | Scan                  -- Feld-of-View -> Event
     | Fire Int Int          -- Rel. Koord.
     | NoOp
+    | Repeat Int Instr
+    | IfThenElse Cond Instr Instr
+
+type Cond
+    = EnemyAhead
+    | LowHp
 
 -- Ein einzelner Bot im Spielzustand
 type alias Bot =
