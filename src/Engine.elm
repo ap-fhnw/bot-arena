@@ -47,6 +47,47 @@ scanEnvironment w obj =
     in
         botsInRange ++ objectsInRange
 
+getBotDirAndPos : BotEntity -> (Model.Coord, Model.Coord)
+getBotDirAndPos bot =
+    let
+        dirVec = case bot.dirDeg of
+            0   -> (-1, 0)  -- Up
+            90  -> (0, 1)   -- Right
+            180 -> (1, 0)   -- Down
+            270 -> (0, -1)  -- Left
+            _   -> (0, 0)   -- No movement
+    in
+    (dirVec, bot.pos)
+
+evalCond : World -> BotEntity -> Cond -> Bool
+evalCond w b cond =
+    case cond of
+        EnemyAhead ->
+            -- Check if there is an enemy bot in front of the bot
+            let
+                ((dx, dy), (x, y)) = getBotDirAndPos b
+                targetPos = (x + dx, y + dy)
+            in
+            List.any (\bot -> liveBotAt bot targetPos && bot.id /= b.id) w.bots
+
+        WallAhead ->
+            let
+                ((dx, dy), (x, y)) = getBotDirAndPos b
+                targetPos = (x + dx, y + dy)
+            in
+            List.any (\obj -> 
+                case obj of 
+                    Wall coord -> coord == targetPos 
+                    _ -> False
+            ) w.arena.objects
+
+        LowHp ->
+            b.hp < (w.arena.maxHp // 2)
+
+        Not c ->
+            not (evalCond w b c)
+
+
 runBot : World -> BotEntity -> BotEntity
 runBot w b = case (List.drop b.pc b.program ) of
     -- Move as long as there is no wall or object in the way
@@ -60,12 +101,7 @@ runBot w b = case (List.drop b.pc b.program ) of
             moveStepByStep steps (x, y) = 
                 let
                     -- Get step direction based on bot orientation
-                    (dx, dy) = case b.dirDeg of
-                        0   -> (-1, 0)  -- Move up
-                        90  -> (0, 1)   -- Move right
-                        180 -> (1, 0)   -- Move down
-                        270 -> (0, -1)  -- Move left
-                        _   -> (0, 0)   -- Don't move 
+                    ((dx, dy), (_, _))  = getBotDirAndPos b
 
                     -- Check if position is valid (within bounds, no wall, no bot)
                     isValidPos (x2, y2) = 
@@ -99,7 +135,29 @@ runBot w b = case (List.drop b.pc b.program ) of
     -- Fire at coordinate --> see run world function
     (Fire _ _ :: _) ->  { b | pc = b.pc + 1 }
     -- TODO: If-then-else instruction
-    (IfThenElse cond ifTrue ifFalse :: _) -> { b | pc = b.pc + 1 }
+    (IfThenElse cond ifTrue ifFalse :: _) ->
+        if evalCond w b cond then
+            -- If condition is true, execute the true branch
+            let
+                newProgram = List.take (b.pc + 1) b.program ++ (ifTrue :: List.drop (b.pc + 1) b.program)
+            in
+            if b.pc + 1 < List.length b.program then
+                -- Insert the true branch at the current position
+                { b | pc = b.pc + 1, program = newProgram }
+            else
+                -- If we are at the end of the program, just append the true branch
+            { b | pc = b.pc + 1, program = newProgram }
+        else
+            -- If condition is false, execute the false branch
+            let
+                newProgram = List.take (b.pc + 1) b.program ++ (ifFalse :: List.drop (b.pc + 1) b.program)
+            in
+            if b.pc + 1 < List.length b.program then
+                -- Insert the false branch at the current position
+                { b | pc = b.pc + 1, program = newProgram }
+            else
+                -- If we are at the end of the program, just append the false branch
+            { b | pc = b.pc + 1, program = newProgram }
 
     -- TODO: While loop
     (While cond body :: _) -> { b | pc = b.pc + 1 }
