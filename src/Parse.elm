@@ -3,14 +3,17 @@ module Parse exposing (parseBotScript)
 import Model exposing (Instr(..), Cond(..))
 
 -- Help functions
+parseInt : String -> Maybe Int
+parseInt = String.toInt
+
 strip : String -> String
 strip str = str |> String.trim
 
 splitWords : String -> List String
 splitWords = String.words
 
-parseInt : String -> Maybe Int
-parseInt = String.toInt
+normalizeWords : List String -> List String
+normalizeWords = List.map String.toUpper
 
 findIndex : (a -> Bool) -> List a -> Maybe Int
 findIndex predicate list =
@@ -45,6 +48,7 @@ parseLine line =
     line
         |> strip
         |> splitWords
+        |> normalizeWords -- case-insensitive parsing
         |> parseInstrFromWords
 
 parseInstrFromWords : List String -> Maybe Instr
@@ -76,24 +80,52 @@ parseInstrFromWords words =
                     Nothing
 
         -- IF cond THEN instr ELSE instr
-        "IF" :: condStr :: "THEN" :: thenElseRest ->
-            case splitAt "ELSE" thenElseRest of
-                Just (thenPart, elsePart) ->
-                    case (parseCond condStr, parseInstrFromWords thenPart, parseInstrFromWords elsePart) of
-                        (Just cond, Just th, Just el) ->
-                            Just (IfThenElse cond th el)
+        "IF" :: rest ->
+            case parseCond rest of
+                Just (cond, "THEN" :: thenElseRest) ->
+                    case splitAt "ELSE" thenElseRest of
+                        Just (thenPart, elsePart) ->
+                            case (parseInstrFromWords thenPart, parseInstrFromWords elsePart) of
+                                (Just th, Just el) ->
+                                    Just (IfThenElse cond th el)
+                                _ -> Nothing
+                        Nothing -> Nothing
 
-                        _ -> Nothing
+                _ -> Nothing
 
-                Nothing ->
-                    Nothing
+        -- WHILE cond DO instr
+        "WHILE" :: rest ->
+            case parseCond rest of
+                Just (cond, "DO" :: afterDo) ->
+                    case parseInstrFromWords afterDo of
+                        Just instr ->
+                            Just (While cond instr)
+                        Nothing -> Nothing
+
+                _ -> Nothing
 
         _ ->
             Nothing
 
-parseCond : String -> Maybe Cond
-parseCond str =
-    case String.toUpper str of
-        "ENEMYAHEAD" -> Just EnemyAhead
-        "LOWHP" -> Just LowHp
-        _ -> Nothing
+parseCond : List String -> Maybe (Cond, List String)
+parseCond words =
+    case words of
+        "NOT" :: rest ->
+            case parseCond rest of
+                Just (c, remaining) ->
+                    Just (Not c, remaining)
+                Nothing ->
+                    Nothing
+
+        "ENEMYAHEAD" :: rest ->
+            Just (EnemyAhead, rest)
+
+        "WALLAHEAD" :: rest ->
+            Just (WallAhead, rest)
+
+        "LOWHP" :: rest ->
+            Just (LowHp, rest)
+
+        _ ->
+            Nothing
+

@@ -20,10 +20,13 @@ type Instr
     | NoOp
     | Repeat Int Instr
     | IfThenElse Cond Instr Instr
+    | While Cond Instr
 
 type Cond
     = EnemyAhead
+    | WallAhead
     | LowHp
+    | Not Cond
 
 -- Ein einzelner Bot im Spielzustand
 type alias Bot =
