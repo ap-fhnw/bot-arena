@@ -7,7 +7,7 @@ import Dict exposing (update)
 
 scanEnvironment : World -> Bot -> List (Model.Coord, Model.Obj) 
 scanEnvironment w b =
-    -- TODO: Implement environment scanning like a radar with max range
+    -- Scans the environment like a radar with max range (hard coded at the moment)
     let
         maxRadius = 4
 
@@ -24,7 +24,7 @@ scanEnvironment w b =
             in
                 distanceSquared <= maxRadius * maxRadius
 
-        -- Objects in arena
+        -- Scans for Objects in arena
         objectsInRange = 
             w.arena.objects
                 |> List.filter(\obj ->
@@ -39,7 +39,7 @@ scanEnvironment w b =
                         HealPack (x, y) _ -> ((x, y), obj)
                         BotObj id pos -> (pos, BotObj id pos)
                 )
-        -- Bots in arena
+        -- Scans for Bots in arena
         botsInRange =
             w.bots
                 |> List.filter (\enemyBot ->
