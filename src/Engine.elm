@@ -90,6 +90,30 @@ runBot w b = case (List.drop b.pc b.program ) of
     (Scan :: _)   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w (Bot b) }
     -- Fire at coordinate
     (Fire _ _ :: _) ->  { b | pc = b.pc + 1 }
+    -- If-then-else instruction
+    (IfThenElse cond ifTrue ifFalse :: _) -> { b | pc = b.pc + 1 }
+
+    -- While loop
+    (While cond body :: _) -> { b | pc = b.pc + 1 }
+
+    -- Repeat instruction
+    (Repeat n body :: _) ->
+        if n > 0 then
+            let
+                -- Create a new Instruction list with the body repeated
+                instrToRepeat = List.repeat n body
+            in
+            -- Update the program counter to point to the next instruction after the repeat
+            if b.pc + 1 < List.length b.program then
+                -- Insert the repeated instructions at the current position
+                { b | pc = b.pc + 1, program = List.take (b.pc + 1) b.program ++ instrToRepeat ++ List.drop (b.pc + 1) b.program }
+            else
+                -- If we are at the end of the program, just append the repeated instructions 
+            { b | pc = b.pc + 1, program = instrToRepeat ++ (List.drop (b.pc + 1) b.program) }
+        else
+            { b | pc = b.pc + 1 } -- Skip the repeat if n is 0
+
+
     -- No instruction or end of program
     _ -> { b | pc = b.pc + 1 } 
 
