@@ -45,6 +45,7 @@ type alias Bot =
 type Obj
     = Wall Coord                     -- blocked Coord
     | HealPack Coord Int             -- +HP
+    | BotObj BotId Coord
 
 -- Konfiguration des Schlachtfelds (vor Start einlesbar aus JSON/YAML)
 type alias ArenaConfig =
