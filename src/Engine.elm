@@ -87,7 +87,6 @@ evalCond w b cond =
         Not c ->
             not (evalCond w b c)
 
-
 runBot : World -> BotEntity -> BotEntity
 runBot w b = case (List.drop b.pc b.program ) of
     -- Move as long as there is no wall or object in the way
@@ -105,7 +104,7 @@ runBot w b = case (List.drop b.pc b.program ) of
 
                     -- Check if position is valid (within bounds, no wall, no bot)
                     isValidPos (x2, y2) = 
-                        x2 >= 0 && x2 < Tuple.second(w.arena.size) && y2 >= 0 && y2 < Tuple.first(w.arena.size) &&
+                        x2 >= 0 && x2 <= Tuple.second(w.arena.size) && y2 >= 0 && y2 <= Tuple.first(w.arena.size) &&
                         not (List.any (\obj ->
                             case obj of
                                 Wall coord -> coord == (x2, y2)
@@ -134,7 +133,7 @@ runBot w b = case (List.drop b.pc b.program ) of
     (Scan :: _)   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
     -- Fire at coordinate --> see run world function
     (Fire _ _ :: _) ->  { b | pc = b.pc + 1 }
-    -- TODO: If-then-else instruction
+    -- If-then-else instruction
     (IfThenElse cond ifTrue ifFalse :: _) ->
         if evalCond w b cond then
             -- If condition is true, execute the true branch
@@ -159,8 +158,21 @@ runBot w b = case (List.drop b.pc b.program ) of
                 -- If we are at the end of the program, just append the false branch
             { b | pc = b.pc + 1, program = newProgram }
 
-    -- TODO: While loop
-    (While cond body :: _) -> { b | pc = b.pc + 1 }
+    -- While loop
+    (While cond body :: _) -> 
+        if evalCond w b cond then
+            -- If condition is true, execute the body
+            let
+                -- Create a new Instruction list with the body repeated
+                newProgram = 
+                    List.take b.pc b.program ++ [body, While cond body] ++ List.drop (b.pc + 1) b.program
+            in
+                -- Insert the repeated instructions at the current position
+                { b | program = newProgram }
+            -- If condition is false, just skip to the next instruction
+            else
+                { b | pc = b.pc + 1 }
+
 
     -- Repeat instruction
     (Repeat n body :: _) ->
@@ -175,7 +187,7 @@ runBot w b = case (List.drop b.pc b.program ) of
                 { b | pc = b.pc + 1, program = List.take (b.pc + 1) b.program ++ instrToRepeat ++ List.drop (b.pc + 1) b.program }
             else
                 -- If we are at the end of the program, just append the repeated instructions 
-            { b | pc = b.pc + 1, program = instrToRepeat ++ (List.drop (b.pc + 1) b.program) }
+                { b | pc = b.pc + 1, program = instrToRepeat ++ (List.drop (b.pc + 1) b.program) }
         else
             { b | pc = b.pc + 1 } -- Skip the repeat if n is 0
 
