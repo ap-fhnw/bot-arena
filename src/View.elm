@@ -7,7 +7,7 @@ import Html.Events exposing (onInput, onClick)
 import Model exposing (..)
 import Html.Attributes exposing (spellcheck)
 
-type Cell = B Bot | O Obj | Empty
+type Cell = B BotEntity | O Obj | Empty
 
 getObj : List Obj -> Coord -> Maybe Obj
 getObj os c = case os of
@@ -16,7 +16,7 @@ getObj os c = case os of
         Wall cc -> if c == cc then Just o else getObj oss c
         _ -> getObj oss c
 
-getBot : List Bot -> Coord -> Maybe Bot
+getBot : List BotEntity -> Coord -> Maybe BotEntity
 getBot bs c = case bs of
     [] -> Maybe.Nothing
     (b :: bss) -> if b.pos == c then Just b else getBot bss c
@@ -38,7 +38,7 @@ brickPattern = """
     linear-gradient(60deg, #c9751b77 25%, transparent 25.5%, transparent 75%, #c9751b77 75%, #c9751b77)
 """
 
-renderBot : Bot -> World -> Html Msg
+renderBot : BotEntity -> World -> Html Msg
 renderBot bot w = div
     [ style "transform" "translateY(2px)"
     , style "font-size" "1.8em"

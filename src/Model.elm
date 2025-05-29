@@ -29,7 +29,7 @@ type Cond
     | Not Cond
 
 -- Ein einzelner Bot im Spielzustand
-type alias Bot =
+type alias BotEntity =
     { id         : BotId
     , name       : String
     , pos        : Coord
@@ -45,7 +45,7 @@ type alias Bot =
 type Obj
     = Wall Coord                     -- blocked Coord
     | HealPack Coord Int             -- +HP
-    | BotObj BotId Coord
+    | Bot BotEntity                  -- Bot-Objekt (für Scan)
 
 -- Konfiguration des Schlachtfelds (vor Start einlesbar aus JSON/YAML)
 type alias ArenaConfig =
@@ -60,6 +60,6 @@ type alias ArenaConfig =
 type alias World =
     { tick        : Tick
     , arena       : ArenaConfig
-    , bots        : List Bot
+    , bots        : List BotEntity
     , queue       : List Int      -- FIFO für interpretierte Instruktionen
     }
