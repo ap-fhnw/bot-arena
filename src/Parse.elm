@@ -54,24 +54,24 @@ parseLine line =
 parseInstrFromWords : List String -> Maybe Instr
 parseInstrFromWords words =
     case words of
-        ["move", nStr] ->
+        ["MOVE", nStr] ->
             parseInt nStr |> Maybe.map Move
 
-        ["turn", nStr] ->
+        ["TURN", nStr] ->
             parseInt nStr |> Maybe.map Turn
 
-        ["scan"] ->
+        ["SCAN"] ->
             Just Scan
 
-        ["nothing"] ->
+        ["NOTHING"] ->
             Just NoOp
 
-        ["fire", xStr, yStr] ->
+        ["FIRE", xStr, yStr] ->
             case (parseInt xStr, parseInt yStr) of
                 (Just x, Just y) -> Just (Fire x y)
                 _ -> Nothing
 
-        "repeat" :: nStr :: rest ->
+        "REPEAT" :: nStr :: rest ->
             case (parseInt nStr, parseInstrFromWords rest) of
                 (Just n, Just instr) ->
                     Just (Repeat n instr)
@@ -79,35 +79,52 @@ parseInstrFromWords words =
                 _ ->
                     Nothing
 
-        "while" :: condStr :: "do" :: rest ->
-            case (parseCond condStr, parseInstrFromWords rest) of
-                (Just cond, Just instr) ->
-                    Just (While cond instr)
+        -- IF cond THEN instr ELSE instr
+        "IF" :: rest ->
+            case parseCond rest of
+                Just (cond, "THEN" :: thenElseRest) ->
+                    case splitAt "ELSE" thenElseRest of
+                        Just (thenPart, elsePart) ->
+                            case (parseInstrFromWords thenPart, parseInstrFromWords elsePart) of
+                                (Just th, Just el) ->
+                                    Just (IfThenElse cond th el)
+                                _ -> Nothing
+                        Nothing -> Nothing
+
                 _ -> Nothing
 
-        -- IF cond THEN instr ELSE instr
-        "if" :: condStr :: "then" :: thenElseRest ->
-            case splitAt "else" thenElseRest of
-                Just (thenPart, elsePart) ->
-                    case (parseCond condStr, parseInstrFromWords thenPart, parseInstrFromWords elsePart) of
-                        (Just cond, Just th, Just el) ->
-                            Just (IfThenElse cond th el)
-                        _ -> Nothing
+        -- WHILE cond DO instr
+        "WHILE" :: rest ->
+            case parseCond rest of
+                Just (cond, "DO" :: afterDo) ->
+                    case parseInstrFromWords afterDo of
+                        Just instr ->
+                            Just (While cond instr)
+                        Nothing -> Nothing
+
+                _ -> Nothing
+
+        _ ->
+            Nothing
+
+parseCond : List String -> Maybe (Cond, List String)
+parseCond words =
+    case words of
+        "NOT" :: rest ->
+            case parseCond rest of
+                Just (c, remaining) ->
+                    Just (Not c, remaining)
                 Nothing ->
                     Nothing
 
         "ENEMYAHEAD" :: rest ->
             Just (EnemyAhead, rest)
 
+        "WALLAHEAD" :: rest ->
+            Just (WallAhead, rest)
+
         "LOWHP" :: rest ->
             Just (LowHp, rest)
 
         _ ->
             Nothing
-
-parseCond : String -> Maybe Cond
-parseCond str =
-    case String.toUpper str of
-        "ENEMYAHEAD" -> Just EnemyAhead
-        "LOWHP" -> Just LowHp
-        _ -> Nothing
