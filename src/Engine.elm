@@ -90,10 +90,10 @@ runBot w b = case (List.drop b.pc b.program ) of
     (Scan :: _)   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w (Bot b) }
     -- Fire at coordinate
     (Fire _ _ :: _) ->  { b | pc = b.pc + 1 }
-    -- If-then-else instruction
+    -- TODO: If-then-else instruction
     (IfThenElse cond ifTrue ifFalse :: _) -> { b | pc = b.pc + 1 }
 
-    -- While loop
+    -- TODO: While loop
     (While cond body :: _) -> { b | pc = b.pc + 1 }
 
     -- Repeat instruction
