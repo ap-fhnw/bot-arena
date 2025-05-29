@@ -25,6 +25,7 @@ type Instr
 type Cond
     = EnemyAhead
     | LowHp
+    | Not Cond
 
 -- Ein einzelner Bot im Spielzustand
 type alias Bot =
