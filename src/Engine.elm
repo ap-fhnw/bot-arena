@@ -21,14 +21,14 @@ isInRadarRange (botX, botY) (x, y) n =
         distanceSquared <= n * n
 
 
-scanEnvironment : World -> Obj -> List (Model.Coord, Obj)
+scanEnvironment : World -> BotEntity -> List (Model.Coord, Obj)
 scanEnvironment w obj =
     -- Scans the environment like a radar with max range (hard coded at the moment)
     let
         maxRadius = 4
 
         -- Bot position
-        (botX, botY) = getObjPos obj
+        (botX, botY) = obj.pos
 
         -- Scans for Objects and Bots in arena, and pairs them with their coordinates
         objectsInRange =
@@ -47,6 +47,10 @@ runBot : World -> BotEntity -> BotEntity
 runBot w b = case (List.drop b.pc b.program ) of
     -- Move as long as there is no wall or object in the way
     (Move n :: _) -> 
+        if not b.alive then
+            -- If the bot is not alive, skip the move
+            { b | pc = b.pc + 1 }
+        else
         let  
             -- Try to move step by step
             moveStepByStep steps (x, y) = 
@@ -87,7 +91,7 @@ runBot w b = case (List.drop b.pc b.program ) of
     -- Turn 0, 90, 180, 270 degrees (up, right, down, left)
     (Turn n :: _) -> { b | pc = b.pc + 1, dirDeg = modBy 360 (b.dirDeg + n) }
     -- Scan environment, view angle is 90 degrees -> 45 degrees left and right
-    (Scan :: _)   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w (Bot b) }
+    (Scan :: _)   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
     -- Fire at coordinate
     (Fire _ _ :: _) ->  { b | pc = b.pc + 1 }
     -- TODO: If-then-else instruction
