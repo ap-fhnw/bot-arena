@@ -3,11 +3,51 @@ module Engine exposing (tick)
 import Model exposing (World, Bot, Instr(..), Obj(..))
 import Html.Attributes exposing (coords)
 
-scanEnvironment : World -> Bot -> a
+scanEnvironment : World -> Bot -> List (Model.Coord, Model.Obj) 
 scanEnvironment w b =
-    -- TODO: Implement environment scanning 
-    Debug.todo "scanEnvironment not implemented"
+    -- TODO: Implement environment scanning like a radar with max range
+    let
+        maxRadius = 4
 
+        -- Bot position
+        (botX, botY) = b.pos
+
+        -- Check if a coordinate is within the radar radius
+        isInRadarRange : Model.Coord -> Bool
+        isInRadarRange (x, y) = 
+            let
+                dx = x - botX
+                dy = y - botY
+                distanceSquared = dx * dx + dy * dy
+            in
+                distanceSquared <= maxRadius * maxRadius
+
+        -- Objects in arena
+        objectsInRange = 
+            w.arena.objects
+                |> List.filter(\obj ->
+                    case obj of
+                        Wall (x, y) -> isInRadarRange (x, y)
+                        HealPack (x, y) _ -> isInRadarRange (x, y)
+                        BotObj _ _ -> False
+                )
+                |> List.map(\obj -> 
+                    case obj of 
+                        Wall (x, y) -> ((x, y), obj)
+                        HealPack (x, y) _ -> ((x, y), obj)
+                        BotObj id pos -> (pos, BotObj id pos)
+                )
+        -- Bots in arena
+        botsInRange =
+            w.bots
+                |> List.filter (\enemyBot ->
+                    enemyBot.id /= b.id &&
+                    enemyBot.alive &&
+                    isInRadarRange enemyBot.pos
+                )
+                |> List.map(\bot -> (bot.pos, BotObj bot.id bot.pos))
+    in
+        objectsInRange ++ botsInRange
 
 runBot : World -> Bot -> Bot
 runBot w b = case (List.drop b.pc b.program) of
@@ -28,8 +68,8 @@ runBot w b = case (List.drop b.pc b.program) of
                 not (List.any (\obj ->
                     case obj of
                         Wall coord -> coord == (x, y)
-                        _ -> False) w.arena.objects) &&
-
+                        _ -> False) w.arena.objects
+                    ) &&
                 not (List.any (\bot -> bot.id /= b.id && bot.alive && bot.pos == (x, y)) w.bots)
 
             -- Try to move step by step
