@@ -26,6 +26,7 @@ type Cond
     = EnemyAhead
     | WallAhead
     | LowHp
+    | Not Cond
 
 -- Ein einzelner Bot im Spielzustand
 type alias Bot =
@@ -44,6 +45,7 @@ type alias Bot =
 type Obj
     = Wall Coord                     -- blocked Coord
     | HealPack Coord Int             -- +HP
+    | BotObj BotId Coord
 
 -- Konfiguration des Schlachtfelds (vor Start einlesbar aus JSON/YAML)
 type alias ArenaConfig =
