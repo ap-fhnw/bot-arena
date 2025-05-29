@@ -11,14 +11,20 @@ getObjPos obj =
         HealPack coord _ -> coord
         Bot entity       ->  entity.pos
 
-isInRadarRange : Model.Coord -> Model.Coord -> Int -> Bool
-isInRadarRange (botX, botY) (x, y) n = 
+isInRadarRange : BotEntity -> List (Obj) -> Int -> Bool
+isInRadarRange bot objs n = 
     let
-        dx = x - botX
-        dy = y - botY
-        distanceSquared = dx * dx + dy * dy
+        (botX, botY) = bot.pos
     in
-        distanceSquared <= n * n
+    List.any (\obj ->
+        let
+            (x, y) = getObjPos obj
+            dx = x - botX
+            dy = y - botY
+            distanceSquared = dx * dx + dy * dy
+        in
+            distanceSquared <= n * n
+    ) objs
 
 
 scanEnvironment : World -> BotEntity -> List (Model.Coord, Obj)
@@ -27,21 +33,16 @@ scanEnvironment w obj =
     let
         maxRadius = 4
 
-        -- Bot position
-        (botX, botY) = obj.pos
-
         -- Scans for Objects and Bots in arena, and pairs them with their coordinates
         objectsInRange =
-            w.arena.objects
-                |> List.filter(\o ->
-                    case o of
-                        Wall coord  -> isInRadarRange (botX, botY) coord maxRadius
-                        HealPack coord _ -> isInRadarRange (botX, botY) coord maxRadius
-                        Bot entity -> isInRadarRange (botX, botY) entity.pos maxRadius
-                )
+            List.filter(\o -> isInRadarRange obj [o] maxRadius) w.arena.objects
                 |> List.map (\o -> (getObjPos o, o))
+        -- Scans for Bots in arena, and pairs them with their coordinates (right now scans himself too)
+        botsInRange =
+            List.filter (\b -> isInRadarRange obj [Bot b] maxRadius) w.bots
+                |> List.map (\b -> (b.pos, Bot b))
     in
-        objectsInRange
+        botsInRange ++ objectsInRange
 
 runBot : World -> BotEntity -> BotEntity
 runBot w b = case (List.drop b.pc b.program ) of
@@ -92,7 +93,7 @@ runBot w b = case (List.drop b.pc b.program ) of
     (Turn n :: _) -> { b | pc = b.pc + 1, dirDeg = modBy 360 (b.dirDeg + n) }
     -- Scan environment, view angle is 90 degrees -> 45 degrees left and right
     (Scan :: _)   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
-    -- Fire at coordinate
+    -- Fire at coordinate --> see run world function
     (Fire _ _ :: _) ->  { b | pc = b.pc + 1 }
     -- TODO: If-then-else instruction
     (IfThenElse cond ifTrue ifFalse :: _) -> { b | pc = b.pc + 1 }
