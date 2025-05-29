@@ -87,12 +87,18 @@ showInstruction i = case i of
 
     IfThenElse cond i1 i2 ->
         "IF " ++ showCond cond ++ " THEN " ++ showInstruction i1 ++ " ELSE " ++ showInstruction i2
+    
+    While cond instr ->
+        "WHILE " ++ showCond cond ++ " DO " ++ showInstruction instr
+
     _ -> "?"
 
 showCond : Cond -> String
 showCond c = case c of
     EnemyAhead -> "ENEMYAHEAD"
     LowHp -> "LOWHP"
+    WallAhead -> "WALLAHEAD"
+    Not inner -> "NOT " ++ showCond inner
 
 showProgram : Int -> List Instr -> String
 showProgram pc is = is
