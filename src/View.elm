@@ -8,7 +8,7 @@ import Html.Styled.Attributes exposing (css, spellcheck)
 import Html.Styled.Events exposing (onClick, onInput)
 import Model exposing (..)
 
-type Cell = B Bot | O Obj | Empty
+type Cell = B BotEntity | O Obj | Empty
 
 getObj : List Obj -> Coord -> Maybe Obj
 getObj os c = case os of
@@ -17,7 +17,7 @@ getObj os c = case os of
         Wall cc -> if c == cc then Just o else getObj oss c
         _ -> getObj oss c
 
-getBot : List Bot -> Coord -> Maybe Bot
+getBot : List BotEntity -> Coord -> Maybe BotEntity
 getBot bs c = case bs of
     [] -> Maybe.Nothing
     (b :: bss) -> if b.pos == c then Just b else getBot bss c
@@ -82,7 +82,8 @@ pointer angle = div [ css
     , left (calc (pct 50) minus (px 16))
     ]] []
 
-renderBot : Bot -> World -> Html Msg
+renderBot : BotEntity -> World -> Html Msg
+
 renderBot bot w = div
     [ css [ transform (translateY (px 2))
     , fontSize (Css.em 1.8)
