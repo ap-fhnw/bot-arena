@@ -83,6 +83,7 @@ pointer angle = div [ css
     ]] []
 
 renderBot : BotEntity -> World -> Html Msg
+
 renderBot bot w = div
     [ css [ transform (translateY (px 2))
     , fontSize (Css.em 1.8)
