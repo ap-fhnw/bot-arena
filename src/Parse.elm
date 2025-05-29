@@ -116,6 +116,9 @@ parseCond words =
         "ENEMYAHEAD" :: rest ->
             Just (EnemyAhead, rest)
 
+        "WALLAHEAD" :: rest ->
+            Just (WallAhead, rest)
+
         "LOWHP" :: rest ->
             Just (LowHp, rest)
 
