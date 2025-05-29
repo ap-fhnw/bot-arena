@@ -1,11 +1,12 @@
 module View exposing (renderView)
 
 import Debug exposing (toString)
-import Html exposing (Html, main_, div, table, tr, td, text, textarea, button)
-import Html.Attributes exposing (style, type_)
-import Html.Events exposing (onInput, onClick)
+import Css exposing (..)
+import Html
+import Html.Styled exposing (..)
+import Html.Styled.Attributes exposing (css)
+import Html.Styled.Events exposing (onClick, onInput)
 import Model exposing (..)
-import Html.Attributes exposing (spellcheck)
 
 type Cell = B Bot | O Obj | Empty
 
@@ -38,49 +39,53 @@ brickPattern = """
     linear-gradient(60deg, #c9751b77 25%, transparent 25.5%, transparent 75%, #c9751b77 75%, #c9751b77)
 """
 
+theme :
+    { healthBarBackground : Color
+    , healthBarForeground : Color
+    }
+theme =
+    { healthBarBackground = rgb 0 0 0
+    , healthBarForeground = rgb 14 228 57
+    }
+
+healthBarBase : Color -> Float -> Html msg
+healthBarBase col w = div
+    [ css [ position absolute
+    , border3 (px 1) groove transparent
+    , width (pct 100)
+    , height (px 3)
+    , top (px -2)
+    , boxSizing borderBox
+    , backgroundColor col
+    , width (pct w)
+    ]]
+    []
+
 renderBot : Bot -> World -> Html Msg
 renderBot bot w = div
-    [ style "transform" "translateY(2px)"
-    , style "font-size" "1.8em"
-    , style "width" "100%"
-    , style "height" "100%"
-    , style "display" "grid"
-    , style "align-items" "center"
-    ]
+    [ css [ transform (translateY (px 2))
+    , fontSize (Css.em 1.8)
+    , width (pct 100)
+    , height (pct 100)
+    , property "display" "grid"
+    , alignItems center
+    ]]
     [ div
-        [ style "background" "transparent"
-        , style "position" "absolute"
-        , style "z-index" "0"
-        , style "border" "groove 16px transparent"
-        , style "border-right" "groove 16px red"
-        , style "border-top" "groove 16px red"
-        , style "margin" "0"
-        , style "transform" ("rotateZ(" ++ (toString (bot.dirDeg - 90)) ++ "deg) translateX(16px) scale(0.3, 0.3) rotateZ(45deg)  ")
-        , style "width" "0px"
-        , style "height" "0px"
-        , style "box-sizing" "border-box"
-        , style "left" "calc(50% - 16px)"
-        ] []
-    , div
-        [ style "background" "black"
-        , style "position" "absolute"
-        , style "z-index" "-2"
-        , style "border" "groove 1px transparent"
-        , style "width" "100%"
-        , style "height" "3px"
-        , style "top" "-2px"
-        , style "box-sizing" "border-box"
-        ] []
-    , div
-        [ style "background" "rgb(14, 228, 57)"
-        , style "position" "absolute"
-        , style "z-index" "-1"
-        , style "border" "groove 1px transparent"
-        , style "width" (toString (100 * toFloat bot.hp / toFloat w.arena.maxHp) ++ "%") 
-        , style "height" "3px"
-        , style "top" "-2px"
-        , style "box-sizing" "border-box"
-        ] []
+        [css [ property "background" "transparent"
+        , property "position" "absolute"
+        , property "z-index" "0"
+        , property "border" "groove 16px transparent"
+        , property "border-right" "groove 16px red"
+        , property "border-top" "groove 16px red"
+        , property "margin" "0"
+        , property "transform" ("rotateZ(" ++ (toString (bot.dirDeg - 90)) ++ "deg) translateX(16px) scale(0.3, 0.3) rotateZ(45deg)  ")
+        , property "width" "0px"
+        , property "height" "0px"
+        , property "box-sizing" "border-box"
+        , property "left" "calc(50% - 16px)"
+        ]] []
+    , healthBarBase theme.healthBarBackground 100
+    , healthBarBase theme.healthBarForeground (100 * toFloat bot.hp / toFloat w.arena.maxHp)
     , text (if bot.alive then "🤖" else "🪦")
     ]
 
@@ -88,23 +93,23 @@ renderCell : World -> Coord -> Html Msg
 renderCell model coord =
     let content = case cell model coord of
                     Empty -> text ""
-                    O o  -> div
-                        [ style "background" "rgb(120, 61, 14)"
-                        , style "background-image" brickPattern
-                        , style "width" "100%"
-                        , style "height" "100%"
-                        , style "background-size" "20px 35px"
-                        , style "background-position" "0 0, 0 0, 10px 18px, 10px 18px, 0 0, 10px 18px"
-                        ] [ text ""]
+                    O _ -> div
+                        [css [ property "background" "rgb(120, 61, 14)"
+                        , property "background-image" brickPattern
+                        , property "width" "100%"
+                        , property "height" "100%"
+                        , property "background-size" "20px 35px"
+                        , property "background-position" "0 0, 0 0, 10px 18px, 10px 18px, 0 0, 10px 18px"
+                        ]] [ text ""]
                     B b -> renderBot b model
     in
     td
-        [ style "padding" "1px"
-        , style "text-align" "center"
-        , style "border" "1px solid rgba(0, 0, 0, 0.38)"
-        , style "width" "50px"
-        , style "height" "50px"
-        ]
+        [css[ property "padding" "1px"
+        , property "text-align" "center"
+        , property "border" "1px solid rgba(0, 0, 0, 0.38)"
+        , property "width" "50px"
+        , property "height" "50px"
+        ]]
         [ content ]
 
 renderRow : World -> Int -> Html Msg
@@ -137,67 +142,66 @@ showProgram pc is = is
     |> List.indexedMap (\i a -> showInstruction a ++ (if i == pc then " <-" else ""))
     |> List.foldr (\a b -> a ++ "\n" ++ b) ""
 
-mainLayout : List (Html.Attribute msg)
+mainLayout : List (Html.Styled.Attribute msg)
 mainLayout =
-    [ style "display" "grid"
-    , style "grid-template" """
+    [ css [ property "display" "grid"
+    , property "grid-template" """
         'map' auto
         'editor' auto
         'debug' auto
         / 1fr 1fr
         """
-    , style "grid-template-columns" "1fr"
-    , style "gap" ".5em"
-    , style "padding" "2em"
-    ]
+    , property "grid-template-columns" "1fr"
+    , property "gap" ".5em"
+    , property "padding" "2em"
+    ] ]
 
-renderView : Model -> Html Msg
-renderView model = main_ mainLayout
+renderView : Model -> Html.Html Msg
+renderView model = toUnstyled (main_ mainLayout
     [ div
-        [ style "grid-area" "editor"
-        , style "display" "grid"
-        , style "grid-template-rows" "1fr auto"
-        , style "gap" ".5em"
-        ]
+        [ css [ property "grid-area" "editor"
+        , property "display" "grid"
+        , property "grid-template-rows" "1fr auto"
+        , property "gap" ".5em"
+        ]]
         [ textarea
             [ onInput UpdateScript
-            , spellcheck False
-            , style "resize" "none"
-            , style "font-size" "1.5em"
-            , style "padding" "8px"
-            , style "text-transform" "uppercase"
+            , Html.Styled.Attributes.spellcheck False
+            , css [property "resize" "none"
+            , property "font-size" "1.5em"
+            , property "padding" "8px"
+            , property "text-transform" "uppercase"]
             ] []
         , button
             [ onClick StoreScript
-            , type_ "submit"
-            , style "justify-self" "center"
-            , style "font-size" "1.5em"
+            , css [property "justify-self" "center"
+            , property "font-size" "1.5em"]
             ] [ text "Store" ]
         ]
-    , div [ style "grid-area" "debug"
-          , style "font-size" "1.5em"
+    , div [ css [property "grid-area" "debug"
+          , property "font-size" "1.5em"]
         ]
-        [ Html.pre
-            [ style "padding" "1em"
-            , style "background" "whitesmoke"
+        [ Html.Styled.pre
+            [ css [ property "padding" "1em"
+            , property "background" "whitesmoke" ]
             ] (List.map (\b -> text (b.name ++ "\n" ++ (showProgram b.pc b.program))) model.world.bots)  
         ]
     , div
-        [ style "grid-area" "map"
-        , style "display" "flex"
-        , style "flex-direction" "column"
-        , style "align-items" "center"
-        , style "gap" ".5em"
+        [ css [property "grid-area" "map"
+        , property "display" "flex"
+        , property "flex-direction" "column"
+        , property "align-items" "center"
+        , property "gap" ".5em"]
         ]
-        [ table
-            [ style "border-collapse" "collapse"
-            , style "margin" "auto"
+        [ Html.Styled.table
+            [ css [property "border-collapse" "collapse"
+            , property "margin" "auto"]
             ]
             ((List.range 0 (Tuple.second model.world.arena.size))
                 |> List.map (renderRow model.world))
         , div []
-            [ button [ onClick RunStep            , style "font-size" "1.5em"
+            [ button [ onClick RunStep            , css [property "font-size" "1.5em"]
                      ] [ text "Run Step" ]
             ]
         ]
-    ]
+    ])
