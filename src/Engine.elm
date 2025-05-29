@@ -2,6 +2,8 @@ module Engine exposing (tick)
 
 import Model exposing (World, Bot, Instr(..), Obj(..))
 import Html.Attributes exposing (coords)
+import Model exposing (Cond(..))
+import Dict exposing (update)
 
 scanEnvironment : World -> Bot -> List (Model.Coord, Model.Obj) 
 scanEnvironment w b =
@@ -49,7 +51,7 @@ scanEnvironment w b =
     in
         objectsInRange ++ botsInRange
 
-runBot : World -> Bot -> Bot
+runBot : World -> Bot -> (Bot, Maybe Model.BotId)
 runBot w b = case (List.drop b.pc b.program) of
     -- Move as long as there is no wall or object in the way
     (Move n :: _) -> 
@@ -87,24 +89,56 @@ runBot w b = case (List.drop b.pc b.program) of
             -- calculate the new position
             newPos = moveStepByStep n b.pos
         in 
-        { b | pc = b.pc + 1, pos = newPos }
+        ({ b | pc = b.pc + 1, pos = newPos }, Nothing)
 
     -- Turn 0, 90, 180, 270 degrees (up, right, down, left)
-    (Turn n :: _) -> { b | pc = b.pc + 1, dirDeg = modBy 360 (b.dirDeg + n) }
+    (Turn n :: _) -> ({ b | pc = b.pc + 1, dirDeg = modBy 360 (b.dirDeg + n) }, Nothing)
     -- Scan environment, view angle is 90 degrees -> 45 degrees left and right
-    (Scan :: _)   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }    
+    (Scan :: _)   -> ({ b | pc = b.pc + 1, viewEnv = scanEnvironment w b }, Nothing)    
     -- Fire at coordinate
-    (Fire x y :: _) -> if List.any (\bot -> bot.pos == (x, y) && bot.alive) w.bots then
-                           { b | pc = b.pc + 1, alive = False } -- Bot hit, mark as dead
-                       else
-                           { b | pc = b.pc + 1 } -- No hit, just continue
-    _ -> { b | pc = b.pc + 1 } -- No instruction or end of program
+    (Fire x y :: _) -> 
+        let
+            -- Find if there is a bot at the target
+            hitBotId = 
+                w.bots
+                    |> List.filter (\bot -> bot.pos == (x, y) && bot.alive && bot.id /= b.id)
+                    |> List.head
+                    |> Maybe.map .id
+        in 
+        ({ b | pc = b.pc + 1 }, hitBotId)
+        
+    _ -> ({ b | pc = b.pc + 1 }, Nothing) -- No instruction or end of program
 
-run : World -> List Bot
-run w = List.map (\b -> runBot w b) w.bots
+run : World -> (List Bot, List Model.BotId)
+run w = 
+    w.bots
+        |> List.map(\b -> runBot w b)
+        |> List.foldr
+            (\(updatedBot, maybeHitId) (bots, hitIds) ->
+                (updatedBot :: bots
+                , case maybeHitId of
+                    Just hitId -> hitId :: hitIds
+                    Nothing -> hitIds
+                )
+            )
+            ([], [])
+
 
 tick : World -> World
-tick world = { world
+tick world = 
+    let
+        (updatedBots, hitIds) = run world
+        -- Mark hit bots as dead
+        finalBots =
+            updatedBots
+                |> List.map (\b ->
+                    if List.member b.id hitIds then
+                        { b | alive = False, hp = 0 } -- Bot is hit and dies
+                    else
+                        b
+                )
+    in
+    { world
     | tick = world.tick + 1
-    , bots = run world
+    , bots = finalBots
     }
