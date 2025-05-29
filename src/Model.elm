@@ -24,6 +24,7 @@ type Instr
 
 type Cond
     = EnemyAhead
+    | WallAhead
     | LowHp
 
 -- Ein einzelner Bot im Spielzustand

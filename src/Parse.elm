@@ -92,6 +92,12 @@ parseInstrFromWords words =
                 Nothing ->
                     Nothing
 
+        "ENEMYAHEAD" :: rest ->
+            Just (EnemyAhead, rest)
+
+        "LOWHP" :: rest ->
+            Just (LowHp, rest)
+
         _ ->
             Nothing
 
