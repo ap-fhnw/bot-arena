@@ -62,6 +62,22 @@ loadScript { world, script } =
         , pc = 0
         , alive = True
         , viewEnv = []
+        },
+        { id = 2
+        , name = "Bar"
+        , pos = (5, 5)
+        , dirDeg = 0
+        , hp = 10
+        , program = parseBotScript """
+            MOVE 1
+            TURN 90
+            FIRE 0 0
+            MOVE 1
+            TURN 90
+            FIRE 0 1 """
+        , pc = 0
+        , alive = True
+        , viewEnv = []
         }
         ]
     }

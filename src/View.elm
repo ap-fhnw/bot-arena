@@ -15,7 +15,7 @@ getObj os c = case os of
     (o :: oss) -> case o of
         Wall cc -> if c == cc then Just o else getObj oss c
         _ -> getObj oss c
-        
+
 getBot : List Bot -> Coord -> Maybe Bot
 getBot bs c = case bs of
     [] -> Maybe.Nothing
@@ -28,37 +28,75 @@ cell world coord = case (getObj world.arena.objects coord) of
         Just b -> B b
         _ -> Empty
 
-renderCell : World -> Coord -> Html msg
+brickPattern : String
+brickPattern = """
+    linear-gradient(30deg, #c9751b 12%, transparent 12.5%, transparent 87%, #c9751b 87.5%, #c9751b),
+    linear-gradient(150deg, #c9751b 12%, transparent 12.5%, transparent 87%, #c9751b 87.5%, #c9751b),
+    linear-gradient(30deg, #c9751b 12%, transparent 12.5%, transparent 87%, #c9751b 87.5%, #c9751b),
+    linear-gradient(150deg, #c9751b 12%, transparent 12.5%, transparent 87%, #c9751b 87.5%, #c9751b),
+    linear-gradient(60deg, #c9751b77 25%, transparent 25.5%, transparent 75%, #c9751b77 75%, #c9751b77),
+    linear-gradient(60deg, #c9751b77 25%, transparent 25.5%, transparent 75%, #c9751b77 75%, #c9751b77)
+"""
+
+renderBot : Bot -> World -> Html Msg
+renderBot bot w = div
+    [ style "transform" "translateY(2px)"
+    , style "font-size" "1.8em"
+    , style "width" "100%"
+    , style "height" "100%"
+    , style "display" "grid"
+    , style "align-items" "center"
+    ]
+    [ div
+        [ style "background" "transparent"
+        , style "position" "absolute"
+        , style "z-index" "0"
+        , style "border" "groove 16px transparent"
+        , style "border-right" "groove 16px red"
+        , style "border-top" "groove 16px red"
+        , style "margin" "0"
+        , style "transform" ("rotateZ(" ++ (toString (bot.dirDeg - 90)) ++ "deg) translateX(16px) scale(0.3, 0.3) rotateZ(45deg)  ")
+        , style "width" "0px"
+        , style "height" "0px"
+        , style "box-sizing" "border-box"
+        , style "left" "calc(50% - 16px)"
+        ] []
+    , div
+        [ style "background" "black"
+        , style "position" "absolute"
+        , style "z-index" "-2"
+        , style "border" "groove 1px transparent"
+        , style "width" "100%"
+        , style "height" "3px"
+        , style "top" "-2px"
+        , style "box-sizing" "border-box"
+        ] []
+    , div
+        [ style "background" "rgb(14, 228, 57)"
+        , style "position" "absolute"
+        , style "z-index" "-1"
+        , style "border" "groove 1px transparent"
+        , style "width" (toString (100 * toFloat bot.hp / toFloat w.arena.maxHp) ++ "%") 
+        , style "height" "3px"
+        , style "top" "-2px"
+        , style "box-sizing" "border-box"
+        ] []
+    , text (if bot.alive then "🤖" else "🪦")
+    ]
+
+renderCell : World -> Coord -> Html Msg
 renderCell model coord =
     let content = case cell model coord of
                     Empty -> text ""
                     O o  -> div
-                        [ style "background" "rgb(163, 86, 23)"
+                        [ style "background" "rgb(120, 61, 14)"
+                        , style "background-image" brickPattern
                         , style "width" "100%"
                         , style "height" "100%"
+                        , style "background-size" "20px 35px"
+                        , style "background-position" "0 0, 0 0, 10px 18px, 10px 18px, 0 0, 10px 18px"
                         ] [ text ""]
-                    B b -> div
-                        [ style "transform" "rotateZ(0deg)"
-                        , style "font-size" "1.8em"
-                        , style "width" "100%"
-                        , style "height" "100%"
-                        , style "display" "grid"
-                        , style "align-items" "center"
-                        ]
-                        [ div
-                            [ style "background" "transparent"
-                            , style "position" "absolute"
-                            , style "z-index" "-1"
-                            , style "border" "groove 16px transparent"
-                            , style "border-right" "groove 16px red"
-                            , style "border-top" "groove 16px red"
-                            , style "margin" ".2em"
-                            , style "transform" ("rotateZ(" ++ (toString (b.dirDeg - 90)) ++ "deg) translateX(19px) scale(0.35, 0.35) rotateZ(45deg)")
-                            , style "width" "10px"
-                            , style "height" "10px"
-                            ] []
-                        , text "🤖"
-                        ]
+                    B b -> renderBot b model
     in
     td
         [ style "padding" "1px"
@@ -69,7 +107,7 @@ renderCell model coord =
         ]
         [ content ]
 
-renderRow : World -> Int -> Html msg
+renderRow : World -> Int -> Html Msg
 renderRow world row =
     tr [] ((List.range 0 (Tuple.second world.arena.size))
         |> List.map (\i -> (row, i))
@@ -82,22 +120,16 @@ showInstruction i = case i of
     Turn n -> "TURN " ++ toString n ++ "°"
     Scan -> "SCAN"
     Fire x y -> "FIRE " ++ toString x ++ " " ++ toString y
-    Repeat n instr ->
-        "REPEAT " ++ toString n ++ " " ++ showInstruction instr
-
-    IfThenElse cond i1 i2 ->
-        "IF " ++ showCond cond ++ " THEN " ++ showInstruction i1 ++ " ELSE " ++ showInstruction i2
-    
-    While cond instr ->
-        "WHILE " ++ showCond cond ++ " DO " ++ showInstruction instr
-
+    Repeat n instr -> "REPEAT " ++ toString n ++ " " ++ showInstruction instr
+    IfThenElse cond i1 i2 -> "IF " ++ showCond cond ++ " THEN " ++ showInstruction i1 ++ " ELSE " ++ showInstruction i2
+    While cond instr -> "WHILE " ++ showCond cond ++ " DO " ++ showInstruction instr
     _ -> "?"
 
 showCond : Cond -> String
 showCond c = case c of
-    EnemyAhead -> "ENEMYAHEAD"
-    LowHp -> "LOWHP"
-    WallAhead -> "WALLAHEAD"
+    EnemyAhead -> "ENEMY-AHEAD"
+    LowHp -> "LOW-HP"
+    WallAhead -> "WALL-AHEAD"
     Not inner -> "NOT " ++ showCond inner
 
 showProgram : Int -> List Instr -> String
@@ -109,11 +141,12 @@ mainLayout : List (Html.Attribute msg)
 mainLayout =
     [ style "display" "grid"
     , style "grid-template" """
-        'editor map' 16em
-        'debug map' auto
+        'map' auto
+        'editor' auto
+        'debug' auto
         / 1fr 1fr
         """
-    , style "grid-template-columns" "1fr auto"
+    , style "grid-template-columns" "1fr"
     , style "gap" ".5em"
     , style "padding" "2em"
     ]
@@ -147,7 +180,7 @@ renderView model = main_ mainLayout
         [ Html.pre
             [ style "padding" "1em"
             , style "background" "whitesmoke"
-            ] (List.map (\b -> text (showProgram b.pc b.program)) model.world.bots)  
+            ] (List.map (\b -> text (b.name ++ "\n" ++ (showProgram b.pc b.program))) model.world.bots)  
         ]
     , div
         [ style "grid-area" "map"
