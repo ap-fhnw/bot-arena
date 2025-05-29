@@ -26,6 +26,9 @@ isInRadarRange bot objs n =
             distanceSquared <= n * n
     ) objs
 
+liveBotAt : BotEntity -> Model.Coord -> Bool
+liveBotAt bot coord =
+    bot.alive && bot.pos == coord
 
 scanEnvironment : World -> BotEntity -> List (Model.Coord, Obj)
 scanEnvironment w obj =
@@ -72,7 +75,7 @@ runBot w b = case (List.drop b.pc b.program ) of
                                 Wall coord -> coord == (x2, y2)
                                 _ -> False) w.arena.objects
                             ) &&
-                        not (List.any (\bot -> bot.id /= b.id && bot.alive && bot.pos == (x2, y2)) w.bots)
+                        not (List.any (\bot -> bot.id /= b.id && liveBotAt bot (x2, y2)) w.bots)
                 in
                 if steps <= 0 then
                     (x, y) -- reached target
@@ -132,8 +135,8 @@ run w =
                 maybeHitId =
                     case List.drop b.pc b.program of
                         (Fire x y :: _) ->
-                            w.bots
-                                |> List.filter (\bot -> bot.pos == (x, y) && bot.alive && bot.id /= b.id)
+                            w.bots 
+                                |> List.filter (\bot -> liveBotAt bot (x, y)) -- You can commit suicide
                                 |> List.head
                                 |> Maybe.map .id
                         _ -> Nothing
