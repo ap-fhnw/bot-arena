@@ -75,6 +75,12 @@ parseInstrFromWords words =
                 _ ->
                     Nothing
 
+        "WHILE" :: condStr :: "DO" :: rest ->
+            case (parseCond condStr, parseInstrFromWords rest) of
+                (Just cond, Just instr) ->
+                    Just (While cond instr)
+                _ -> Nothing
+
         -- IF cond THEN instr ELSE instr
         "IF" :: condStr :: "THEN" :: thenElseRest ->
             case splitAt "ELSE" thenElseRest of

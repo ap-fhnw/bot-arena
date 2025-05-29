@@ -20,6 +20,7 @@ type Instr
     | NoOp
     | Repeat Int Instr
     | IfThenElse Cond Instr Instr
+    | While Cond Instr
 
 type Cond
     = EnemyAhead
