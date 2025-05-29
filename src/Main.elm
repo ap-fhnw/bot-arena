@@ -47,11 +47,6 @@ init =
         }
     }
 
--- VIEW
-
-view : Model -> Html Msg
-view = renderView
-
 -- UPDATE
 
 update : Msg -> Model -> Model
@@ -98,6 +93,6 @@ main : Program () Model Msg
 main =
     Browser.sandbox
         { init = init
-        , view = view
+        , view = renderView
         , update = update
         }
