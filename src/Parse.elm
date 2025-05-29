@@ -3,14 +3,17 @@ module Parse exposing (parseBotScript)
 import Model exposing (Instr(..), Cond(..))
 
 -- Help functions
+parseInt : String -> Maybe Int
+parseInt = String.toInt
+
 strip : String -> String
 strip str = str |> String.trim
 
 splitWords : String -> List String
 splitWords = String.words
 
-parseInt : String -> Maybe Int
-parseInt = String.toInt
+normalizeWords : List String -> List String
+normalizeWords = List.map String.toUpper
 
 findIndex : (a -> Bool) -> List a -> Maybe Int
 findIndex predicate list =
@@ -45,6 +48,7 @@ parseLine line =
     line
         |> strip
         |> splitWords
+        |> normalizeWords -- case-insensitive parsing
         |> parseInstrFromWords
 
 parseInstrFromWords : List String -> Maybe Instr
