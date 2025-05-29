@@ -50,24 +50,24 @@ parseLine line =
 parseInstrFromWords : List String -> Maybe Instr
 parseInstrFromWords words =
     case words of
-        ["MOVE", nStr] ->
+        ["move", nStr] ->
             parseInt nStr |> Maybe.map Move
 
-        ["TURN", nStr] ->
+        ["turn", nStr] ->
             parseInt nStr |> Maybe.map Turn
 
-        ["SCAN"] ->
+        ["scan"] ->
             Just Scan
 
-        ["NOTHING"] ->
+        ["nothing"] ->
             Just NoOp
 
-        ["FIRE", xStr, yStr] ->
+        ["fire", xStr, yStr] ->
             case (parseInt xStr, parseInt yStr) of
                 (Just x, Just y) -> Just (Fire x y)
                 _ -> Nothing
 
-        "REPEAT" :: nStr :: rest ->
+        "repeat" :: nStr :: rest ->
             case (parseInt nStr, parseInstrFromWords rest) of
                 (Just n, Just instr) ->
                     Just (Repeat n instr)
@@ -76,15 +76,13 @@ parseInstrFromWords words =
                     Nothing
 
         -- IF cond THEN instr ELSE instr
-        "IF" :: condStr :: "THEN" :: thenElseRest ->
-            case splitAt "ELSE" thenElseRest of
+        "if" :: condStr :: "then" :: thenElseRest ->
+            case splitAt "else" thenElseRest of
                 Just (thenPart, elsePart) ->
                     case (parseCond condStr, parseInstrFromWords thenPart, parseInstrFromWords elsePart) of
                         (Just cond, Just th, Just el) ->
                             Just (IfThenElse cond th el)
-
                         _ -> Nothing
-
                 Nothing ->
                     Nothing
 
