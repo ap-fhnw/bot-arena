@@ -26,7 +26,17 @@ init =
             , pc = 0
             , alive = True
             , viewEnv = []
-            } ]
+            }, 
+            { id = 2
+            , name = "Bar"
+            , pos = (5, 5)
+            , dirDeg = -90
+            , hp = 10
+            , program = []
+            , pc = 0
+            , alive = True
+            , viewEnv = []
+            }]
         , arena =
             { size = (8, 8)
             , goAround = False
@@ -59,6 +69,16 @@ loadScript { world, script } =
         , dirDeg = 180
         , hp = 10
         , program = parseBotScript script
+        , pc = 0
+        , alive = True
+        , viewEnv = []
+        },
+        { id = 2
+        , name = "Bar"
+        , pos = (5, 5)
+        , dirDeg = -90
+        , hp = 10
+        , program = []
         , pc = 0
         , alive = True
         , viewEnv = []
