@@ -99,6 +99,22 @@ moveBot w b steps =
     in
     moveStepByStep steps b.pos
 
+turnBot : BotEntity -> Int -> Int
+turnBot b n =
+    if not b.alive then
+        -- If the bot is not alive, it cannot turn
+        b.dirDeg
+    else
+    -- Turn the bot by n degrees, ensuring it stays within 0-360 range
+    modBy 360 (b.dirDeg + n)
+
+fireAt : BotEntity -> Model.Coord -> Maybe Model.Coord
+fireAt b (x, y) =
+    if not b.alive then
+        Nothing
+    else
+        Just (x, y)
+
 evalCond : World -> BotEntity -> Cond -> Bool
 evalCond w b cond =
     case cond of
@@ -132,11 +148,11 @@ executeInstr w b instr = case instr of
     -- Move as long as there is no wall or object in the way
     Move n -> { b | pc = b.pc + 1, pos = moveBot w b n}
     -- Turn 0, 90, 180, 270 degrees (up, right, down, left)
-    Turn n  -> { b | pc = b.pc + 1, dirDeg = modBy 360 (b.dirDeg + n) }
+    Turn n  -> { b | pc = b.pc + 1, dirDeg = turnBot b n }
     -- Scan environment, view angle is 90 degrees -> 45 degrees left and right
     Scan   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
     -- Fire at coordinate --> see run world function
-    Fire x y ->  { b | pc = b.pc + 1, fireAt = Just (x, y) }
+    Fire x y ->  { b | pc = b.pc + 1, fireAt = fireAt b (x, y) }
     -- If-then-else instruction
     IfThenElse cond ifTrue ifFalse ->
         if evalCond w b cond then
@@ -223,15 +239,17 @@ run w =
                 updatedBot = runBot w b
                 -- If the bot just fired, try to find a hit
                 maybeHitId =
-                    case List.drop b.pc b.program of
-                        (Fire x y :: _) ->
-                            w.bots 
-                                |> List.filter (\bot -> liveBotAt bot (x, y)) -- You can commit suicide
+                    updatedBot.fireAt
+                        |> Maybe.andThen (\(x, y) ->
+                            w.bots
+                                |> List.filter (\target -> liveBotAt target (x, y))
                                 |> List.head
                                 |> Maybe.map .id
-                        _ -> Nothing
+                        )
+                -- Clear the fireAt field after firing
+                finalBot = { updatedBot | fireAt = Nothing }
             in
-            (updatedBot, maybeHitId)
+            (finalBot, maybeHitId)
         )
         |> List.foldr
             (\(updatedBot, maybeHitId) (bots, hitIds) ->
