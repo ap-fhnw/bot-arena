@@ -21,7 +21,9 @@ renderView model = (main_
         [ html [ property "color-scheme" "light dark" ]
         , body [ height (vh 100) ]
         ]
-    , editor model [ property "grid-area" "editor" ]
+    , editor model [ property "grid-area" "editor"
+        , height (pct 100)
+        , overflow scroll ]
     , div
         [ css
         [ property "grid-area" "map"
@@ -44,7 +46,7 @@ renderView model = (main_
                 , lineHeight (num 1.5)
                 ]
             ]
-            [ text (showDebug model) ]
+            [ text "" ]
         , actionRow [] [ btn [ onClick RunStep ] [ text "Run Step" ] ]
     ]]) 
     |> toUnstyled
@@ -52,8 +54,8 @@ renderView model = (main_
 mainLayout : Style
 mainLayout = Css.batch 
     [ grid
-    , property "grid-template" "'editor map debug' auto / 1fr auto"
-    , padding (Css.em 2)
+    , property "grid-template" "'editor map' auto / 1fr auto"
+    , padding (Css.em 1)
     , height (pct 100)
     , boxSizing borderBox
     ]
@@ -172,29 +174,31 @@ showCond c = case c of
     Not inner -> "NOT " ++ showCond inner
 
 showProgram : Int -> List Instr -> String
-showProgram pc is = is
-    |> List.indexedMap (\i a -> (if i == pc then "→ " else " ") ++ showInstruction a)
-    |> List.foldr (\a b -> a ++ "\n" ++ b) ""
+showProgram pc is = case is of
+    [] -> "NO PROGRAM LOADED"
+    _ -> is
+        |> List.indexedMap (\i a -> (if i == pc then "→ " else " ") ++ showInstruction a)
+        |> List.foldr (\a b -> a ++ "\n" ++ b) ""
 
 showDebug : Model -> String
 showDebug { world } = case world.bots of
     (playerBot::_) -> (showProgram playerBot.pc playerBot.program)
     _ -> ""
 
-debugOutput : StyledElement msg
-debugOutput = styled div
-    [ padding (Css.em 1)
-    , backgroundColor theme.debugBg
-    , whiteSpace Css.pre, fontFamily monospace
-    , fontSize (Css.em 1.5)
-    , outsetBorder
-    ]
-
 editor : Model -> List Style -> Html Msg
 editor model style =
     div
       [ css ([ grid, property "grid-template-rows" "auto 1fr" ] ++ style) ]
-      [ debugOutput [] [ text (listBots model.world.bots) ]
+      [ debugOutput [ css [ fontSize (Css.em 1.6), displayFlex, justifyContent center ]] [ text (listBots model.world.bots) ]
+        , div [css [grid, property "grid-template-columns" "1fr 1fr", property "grid-template-rows" "auto", height (pct 100), overflow scroll]]
+            [ debugOutput
+            [ css 
+                [ overflow scroll
+                , lineHeight (num 1.5)
+                , order (num 1)
+                ]
+            ]
+            [ text (showDebug model) ]
         , textarea
           [ onInput UpdateScript
           , Html.Styled.Events.preventDefaultOn "beforeinput"
@@ -209,9 +213,19 @@ editor model style =
               , lineHeight (num 1.5)
               ]
           ] []
+        ]
       , actionRow [] [ btn [ onClick StoreScript ] [ text "Save robo.script" ] ]
       ]
 
+debugOutput : StyledElement msg
+debugOutput = styled div
+    [ padding (Css.em 1)
+    , backgroundColor theme.debugBg
+    , whiteSpace Css.pre, fontFamily monospace
+    , fontSize (Css.em 1.5)
+    , outsetBorder
+    ]
+    
 subscriptions : Model -> Sub Msg
 subscriptions _ = Sub.batch
     [ Events.onKeyDown (keyEventDecoder |> D.andThen (checkHotkey True))
