@@ -13,6 +13,7 @@ theme :
     , healthBarForeground : Color
     , directionPointer : Color
     , wall : Color
+    , wallBorder : Color
     , gridLines : Color
     , debugBg : Color
     }
@@ -20,7 +21,8 @@ theme =
     { healthBarBackground = rgb 0 0 0
     , healthBarForeground = rgb 14 228 57
     , directionPointer = rgb 255 0 0
-    , wall = rgb 100 51 14
+    , wall = rgb 120 100 80
+    , wallBorder = rgb 90 70 20
     , gridLines = rgba 100 100 100 0.7
     , debugBg = rgba 120 120 120 0.3
     }
@@ -28,13 +30,12 @@ theme =
 renderWall : Html msg
 renderWall = div
     [ css
-    [ backgroundColor theme.wall
-    , property "background-image" brickPattern
-    , size (pct 100)
-    , backgroundSize2 (px 20) (px 35)
-    , opacity (num 0.95)
-    , property "background-position" "0 0, 0 0, 10px 18px, 10px 18px, 0 0, 10px 18px"
-    ]] []
+        [ backgroundColor theme.wall
+        , borderColor theme.wallBorder
+        , outsetBorder
+        , size (pct 100)
+        ]
+    ] []
 
 healthBarBase : Color -> Float -> Html msg
 healthBarBase col w = div
@@ -63,16 +64,6 @@ pointer angle = div [ css
     , left (calc (pct 50) minus (px 16))
     ]] []
 
-brickPattern : String
-brickPattern = """
-    linear-gradient(30deg, #c9751b 12%, transparent 12.5%, transparent 87%, #c9751b 87.5%, #c9751b),
-    linear-gradient(150deg, #c9751b 12%, transparent 12.5%, transparent 87%, #c9751b 87.5%, #c9751b),
-    linear-gradient(30deg, #c9751b 12%, transparent 12.5%, transparent 87%, #c9751b 87.5%, #c9751b),
-    linear-gradient(150deg, #c9751b 12%, transparent 12.5%, transparent 87%, #c9751b 87.5%, #c9751b),
-    linear-gradient(60deg, #c9751b77 25%, transparent 25.5%, transparent 75%, #c9751b77 75%, #c9751b77),
-    linear-gradient(60deg, #c9751b77 25%, transparent 25.5%, transparent 75%, #c9751b77 75%, #c9751b77)
-"""
-
 actionRow : StyledElement msg
 actionRow = styled div [ grid, property "grid" "auto-flow / repeat(auto-fit, minmax(18ch, 1fr))" ]
 
@@ -89,7 +80,7 @@ insetBorder : Style
 insetBorder = Css.batch [ bigBorder, borderStyle inset ]
 
 outsetBorder : Style
-outsetBorder = Css.batch [ bigBorder, borderStyle outset ]
+outsetBorder = Css.batch [ bigBorder, borderStyle outset, boxSizing borderBox ]
 
 btn : List (Attribute msg) -> List (Html msg) -> Html msg
 btn = styled button [ outsetBorder, fontFamily monospace, fontSize (Css.em 1.5), padding2 (px 6) (px 4) ]
