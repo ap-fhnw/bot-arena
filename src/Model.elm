@@ -1,11 +1,26 @@
 module Model exposing (..)
 
-type alias Model = { script : String, world : World }
+type alias Model =
+    { script : String
+    , modifier: Bool
+    , world : World
+    }
 
 type Msg = UpdateScript String
     | StoreScript
     | RunStep
-    
+    | ModifierDown KeyEvent
+    | ModifierUp KeyEvent
+    | NOOP
+
+type alias KeyEvent =
+    { key : String
+    , ctrl : Bool
+    , alt : Bool
+    , shift : Bool
+    , meta : Bool
+    }
+
 -- Basis-IDs
 type alias BotId     = Int
 type alias Tick      = Int
