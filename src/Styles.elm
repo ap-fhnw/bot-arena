@@ -25,11 +25,43 @@ theme =
     , debugBg = rgba 120 120 120 0.3
     }
 
-actionRow : StyledElement msg
-actionRow = styled div [ grid, property "grid" "auto-flow / repeat(auto-fit, minmax(32ch, 1fr))" ]
+renderWall : Html msg
+renderWall = div
+    [ css
+    [ backgroundColor theme.wall
+    , property "background-image" brickPattern
+    , size (pct 100)
+    , backgroundSize2 (px 20) (px 35)
+    , opacity (num 0.95)
+    , property "background-position" "0 0, 0 0, 10px 18px, 10px 18px, 0 0, 10px 18px"
+    ]] []
+    
+healthBarBase : Color -> Float -> Html msg
+healthBarBase col w = div
+    [ css [ position absolute
+    , border3 (px 1) groove transparent
+    , width (pct 100)
+    , height (px 3)
+    , top (px -2)
+    , boxSizing borderBox
+    , backgroundColor col
+    , width (pct w)
+    ]]
+    []
 
-grid : Style
-grid = Css.batch [ property "display" "grid", property "gap" "12px", property "grid-template-rows" "1fr auto" ]
+pointer : Float -> Html msg
+pointer angle = div [ css
+    [ position absolute
+    , zIndex (int 0)
+    , border3 (px 16) groove transparent
+    , borderRightColor theme.directionPointer
+    , borderTopColor theme.directionPointer
+    , margin (px 0)
+    , transforms [rotateZ (deg (angle - 90)), translateX (px 16), scale 0.3, rotateZ (deg 45)]
+    , size (px 0)
+    , boxSizing borderBox
+    , left (calc (pct 50) minus (px 16))
+    ]] []
 
 brickPattern : String
 brickPattern = """
@@ -40,6 +72,12 @@ brickPattern = """
     linear-gradient(60deg, #c9751b77 25%, transparent 25.5%, transparent 75%, #c9751b77 75%, #c9751b77),
     linear-gradient(60deg, #c9751b77 25%, transparent 25.5%, transparent 75%, #c9751b77 75%, #c9751b77)
 """
+
+actionRow : StyledElement msg
+actionRow = styled div [ grid, property "grid" "auto-flow / repeat(auto-fit, minmax(32ch, 1fr))" ]
+
+grid : Style
+grid = Css.batch [ property "display" "grid", property "gap" "12px", property "grid-template-rows" "1fr auto" ]
 
 size : LengthOrAuto c -> Style
 size c = Css.batch [ width c, height c ]

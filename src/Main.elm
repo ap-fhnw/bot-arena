@@ -13,6 +13,7 @@ init : () -> (Model, Cmd Msg)
 init _ =
     ({ script = ""
     , modifier = False
+    , autoLoad = False
     , world =
         { tick = 0
         , queue = []
@@ -52,8 +53,9 @@ init _ =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model = case msg of
     StoreScript -> ({ model | world = loadScript model }, Cmd.none)
-    UpdateScript content -> ({ model | script = content }, Cmd.none)
+    UpdateScript content -> ({ model | script = content, world = if model.autoLoad then loadScript model else model.world }, Cmd.none)
     RunStep -> ({ model | world = tick model.world }, Cmd.none)
+    AutoLoad b -> ({ model | autoLoad = b }, Cmd.none)
     ModifierDown k -> ({ model
         | modifier = True 
         , world = if k.key == "Enter" then loadScript model else model.world

@@ -3,12 +3,14 @@ module Model exposing (..)
 type alias Model =
     { script : String
     , modifier: Bool
+    , autoLoad : Bool
     , world : World
     }
 
 type Msg = UpdateScript String
     | StoreScript
     | RunStep
+    | AutoLoad Bool
     | ModifierDown KeyEvent
     | ModifierUp KeyEvent
     | NOOP
