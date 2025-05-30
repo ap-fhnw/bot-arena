@@ -2,130 +2,174 @@ module Parse exposing (parseBotScript)
 
 import Model exposing (Instr(..), Cond(..))
 
--- Help functions
-parseInt : String -> Maybe Int
-parseInt = String.toInt
+type alias Parser a = String -> Maybe (a, String)
 
-strip : String -> String
-strip str = str |> String.trim
+-- Similiar to pure from Haskell Applicative
+succeed : a -> Parser a
+succeed a = \input -> Just (a, input)
 
-splitWords : String -> List String
-splitWords = String.words
+-- Similiar to empty from Haskell Alternative
+fail : Parser a
+fail = \_ -> Nothing
 
-normalizeWords : List String -> List String
-normalizeWords = List.map String.toUpper
-
-findIndex : (a -> Bool) -> List a -> Maybe Int
-findIndex predicate list =
-    let
-        helper idx rest =
-            case rest of
-                [] -> Nothing
-                x :: xs ->
-                    if predicate x then Just idx else helper (idx + 1) xs
-    in
-    helper 0 list
-
-splitAt : String -> List String -> Maybe (List String, List String)
-splitAt marker list =
-    case findIndex ((==) marker) list of
-        Just i ->
-            Just (List.take i list, List.drop (i + 1) list)
-
-        Nothing ->
+-- String Parser helper functions
+sat : (Char -> Bool) -> Parser Char
+sat pred = \input -> case String.uncons input of -- Split a non-empty string into its head and tail
+    Just (c, rest) ->
+        if pred c then
+            Just (c, rest)
+        else
             Nothing
+    Nothing -> Nothing
 
--- Parser 
+takeWhile : (Char -> Bool) -> Parser String
+takeWhile pred =
+    let
+        step acc = oneOf
+            [ sat pred |> andThen (\c -> step (c :: acc))
+            , succeed (String.fromList (List.reverse acc))
+            ]
+    in
+        step []
+
+char : Char -> Parser Char
+char ch = sat (\c -> c == ch)
+
+isSpace : Char -> Bool
+isSpace c = c == ' ' || c == '\n'
+
+spaces : Parser ()
+spaces = takeWhile isSpace |> map (\_ -> ())
+
+signedDigits : Bool -> Parser Int
+signedDigits isNeg = takeWhile Char.isDigit |> andThen
+    (\s -> 
+        case String.toInt (if isNeg then "-" ++ s else s) of
+            Just n -> succeed n
+            Nothing -> fail
+    )
+
+intToken : Parser Int
+intToken = 
+    let 
+        number = oneOf
+            [ char '-' |> andThen (\_ -> signedDigits True)
+            , signedDigits False
+            ]
+    in
+        ignoreRight number spaces
+
+token : String -> Parser String
+token str = ignoreLeft spaces (ignoreRight (string str) spaces)
+
+string : String -> Parser String
+string target =
+    let
+        step : List Char -> Parser ()
+        step chars = case chars of
+            [] -> succeed ()
+            c :: cs -> char c |> andThen (\_ -> step cs)
+    in
+        map (\_ -> target) (step (String.toList target))
+
+map : (a -> b) -> Parser a -> Parser b
+map f p = \input -> case p input of
+    Just (a, rest) -> Just (f a, rest)
+    Nothing -> Nothing
+
+apply : Parser (a -> b) -> Parser a -> Parser b
+apply pf pa = \input -> case pf input of
+    Just (f, rest1) -> case pa rest1 of
+        Just (a, rest2) -> Just (f a, rest2)
+        Nothing -> Nothing
+    Nothing -> Nothing
+
+-- Sequences
+map2 : (a -> b -> c) -> Parser a -> Parser b -> Parser c
+map2 f pa pb =
+    apply (map f pa) pb
+
+ignoreLeft : Parser a -> Parser b -> Parser b
+ignoreLeft p1 p2 = map2 (\_ b -> b) p1 p2
+
+ignoreRight : Parser a -> Parser b -> Parser a
+ignoreRight p1 p2 = map2 (\a _ -> a) p1 p2
+
+oneOf : List (Parser a) -> Parser a
+oneOf parsers = \input -> case parsers of 
+    p :: ps -> case p input of
+        Just result -> Just result
+        Nothing -> (oneOf ps) input
+
+    [] -> Nothing
+
+many : Parser a -> Parser (List a)
+many p = oneOf
+    [ map2 (::) p (lazy (\_ -> many p))
+    , succeed []
+    ]
+
+andThen : (a -> Parser b) -> Parser a -> Parser b
+andThen f p = \input -> case p input of
+    Just (a, rest) -> f a rest
+    Nothing -> Nothing
+
+endOfInput : Parser ()
+endOfInput = \input ->
+    if String.isEmpty input then
+        Just ((), "")
+    else
+        Nothing
+
+lazy : (() -> Parser a) -> Parser a
+lazy thunk = \input -> thunk () input
+
+lazyInstr : (() -> Parser a) -> Parser a
+lazyInstr thunk =
+    ignoreLeft spaces (lazy thunk) -- removes spaces before
+
+-- Parser
+parseCond : Parser Cond
+parseCond = oneOf
+        [ map Not (ignoreLeft (token "NOT") (lazy (\_ -> parseCond)))
+        , map (\_ -> EnemyAhead) (token "ENEMYAHEAD")
+        , map (\_ -> WallAhead)  (token "WALLAHEAD")
+        , map (\_ -> LowHp)      (token "LOWHP")
+        ]
+
+parseInstr : Parser Instr
+parseInstr = oneOf
+        -- IF cond THEN instr ELSE instr
+        [ ignoreLeft (token "IF") parseCond
+            |> andThen (\cond -> ignoreLeft (token "THEN") (lazyInstr (\_ -> parseInstr))
+                    |> andThen (\thenInstr -> ignoreLeft (token "ELSE") (lazyInstr (\_ -> parseInstr))
+                            |> map (\elseInstr -> IfThenElse cond thenInstr elseInstr
+                            )
+                    )
+            )
+        , map2 While 
+            (ignoreLeft (token "WHILE") parseCond)
+            (ignoreLeft (token "DO") (lazyInstr (\_ -> parseInstr)))
+        , map2 Repeat
+            (ignoreLeft (token "REPEAT") intToken)
+            (lazyInstr (\_ -> parseInstr))
+        , map2 Fire
+            (ignoreLeft (token "FIRE") intToken)
+            intToken
+
+        , map Move (ignoreLeft (token "MOVE") intToken)
+        , map Turn (ignoreLeft (token "TURN") intToken)
+        , ignoreLeft (token "SCAN") (succeed Scan)
+        , ignoreLeft (token "NOTHING") (succeed NoOp)
+        ]
+
+-- Parse complete string
+parseScript : Parser (List Instr)
+parseScript = map2 (\instrs _ -> instrs) (many (parseInstr)) (ignoreLeft spaces endOfInput) 
+
+-- Top level Parser
 parseBotScript : String -> List Instr
 parseBotScript input =
-    input
-        |> String.lines                             -- Split into lines
-        |> List.filter (\l -> String.trim l /= "")  -- Remove empty lines
-        |> List.filterMap parseLine                 -- Try to parse each line
-
-parseLine : String -> Maybe Instr
-parseLine line =
-    line
-        |> strip
-        |> splitWords
-        |> normalizeWords -- case-insensitive parsing
-        |> parseInstrFromWords
-
-parseInstrFromWords : List String -> Maybe Instr
-parseInstrFromWords words =
-    case words of
-        ["MOVE", nStr] ->
-            parseInt nStr |> Maybe.map Move
-
-        ["TURN", nStr] ->
-            parseInt nStr |> Maybe.map Turn
-
-        ["SCAN"] ->
-            Just Scan
-
-        ["NOTHING"] ->
-            Just NoOp
-
-        ["FIRE", xStr, yStr] ->
-            case (parseInt xStr, parseInt yStr) of
-                (Just x, Just y) -> Just (Fire x y)
-                _ -> Nothing
-
-        "REPEAT" :: nStr :: rest ->
-            case (parseInt nStr, parseInstrFromWords rest) of
-                (Just n, Just instr) ->
-                    Just (Repeat n instr)
-
-                _ ->
-                    Nothing
-
-        -- IF cond THEN instr ELSE instr
-        "IF" :: rest ->
-            case parseCond rest of
-                Just (cond, "THEN" :: thenElseRest) ->
-                    case splitAt "ELSE" thenElseRest of
-                        Just (thenPart, elsePart) ->
-                            case (parseInstrFromWords thenPart, parseInstrFromWords elsePart) of
-                                (Just th, Just el) ->
-                                    Just (IfThenElse cond th el)
-                                _ -> Nothing
-                        Nothing -> Nothing
-
-                _ -> Nothing
-
-        -- WHILE cond DO instr
-        "WHILE" :: rest ->
-            case parseCond rest of
-                Just (cond, "DO" :: afterDo) ->
-                    case parseInstrFromWords afterDo of
-                        Just instr ->
-                            Just (While cond instr)
-                        Nothing -> Nothing
-
-                _ -> Nothing
-
-        _ ->
-            Nothing
-
-parseCond : List String -> Maybe (Cond, List String)
-parseCond words =
-    case words of
-        "NOT" :: rest ->
-            case parseCond rest of
-                Just (c, remaining) ->
-                    Just (Not c, remaining)
-                Nothing ->
-                    Nothing
-
-        "ENEMYAHEAD" :: rest ->
-            Just (EnemyAhead, rest)
-
-        "WALLAHEAD" :: rest ->
-            Just (WallAhead, rest)
-
-        "LOWHP" :: rest ->
-            Just (LowHp, rest)
-
-        _ ->
-            Nothing
-
+    case parseScript (String.toUpper input) of
+        Just (instrs, "") -> instrs
+        _ -> []
