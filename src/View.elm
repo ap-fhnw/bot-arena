@@ -1,4 +1,4 @@
-module View exposing (renderView)
+module View exposing (renderView, subscriptions)
 
 import Debug exposing (toString)
 import Css exposing (..)
@@ -9,6 +9,8 @@ import Html.Styled.Events exposing (onClick, onInput)
 import Model exposing (..)
 import Styles exposing (..)
 import Css.Global exposing (global, html, body)
+import Json.Decode as D
+import Browser.Events as Events
 
 type Cell = B BotEntity | O Obj | Empty
 
@@ -191,13 +193,12 @@ debugOutput = styled div
 editor : Model -> List Style -> Html Msg
 editor model style =
     div
-      [ css (
-        [grid,
-        property "grid-template-rows" "auto 1fr"
-        ] ++ style) ]
+      [ css ([ grid, property "grid-template-rows" "auto 1fr" ] ++ style) ]
       [ debugOutput [] [ text (listBots model.world.bots) ]
         , textarea
           [ onInput UpdateScript
+          , Html.Styled.Events.preventDefaultOn "beforeinput"
+                ((D.field "inputType" D.string) |> D.andThen (\i -> D.succeed (NOOP, model.modifier && i == "insertLineBreak")))
           , spellcheck False
           , css
               [ resize none
@@ -210,3 +211,22 @@ editor model style =
           ] []
       , actionRow [] [ btn [ onClick StoreScript ] [ text "Save robo.script" ] ]
       ]
+
+subscriptions : Model -> Sub Msg
+subscriptions _ = Sub.batch
+    [ Events.onKeyDown (keyEventDecoder |> D.andThen (checkHotkey True))
+    , Events.onKeyUp (keyEventDecoder |> D.andThen (checkHotkey False))
+    ]
+
+keyEventDecoder : D.Decoder KeyEvent
+keyEventDecoder =
+    D.map5 KeyEvent
+        (D.field "key" D.string)
+        (D.field "ctrlKey" D.bool)
+        (D.field "altKey" D.bool)
+        (D.field "shiftKey" D.bool)
+        (D.field "metaKey" D.bool)
+
+checkHotkey : Bool -> KeyEvent -> D.Decoder Msg
+checkHotkey _ keyEvent =
+    D.succeed ((if keyEvent.shift then ModifierDown else ModifierUp) keyEvent)
