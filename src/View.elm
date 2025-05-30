@@ -4,7 +4,7 @@ import Debug exposing (toString)
 import Css exposing (..)
 import Html
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (css, spellcheck, value type_)
+import Html.Styled.Attributes exposing (css, spellcheck, value, type_)
 import Html.Styled.Events exposing (onClick, onInput, onCheck)
 import Model exposing (..)
 import Styles exposing (..)
