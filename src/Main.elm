@@ -14,8 +14,8 @@ init : () -> (Model, Cmd Msg)
 init _ =
     ({ script = ""
     , modifier = False
-    , autoLoad = False
-    , autoRun = False
+    , autoLoad = True
+    , autoRun = True
     , isRunning = False
     , tickMs = 500
     , world =
