@@ -29,7 +29,7 @@ actionRow : StyledElement msg
 actionRow = styled div [ grid, property "grid" "auto-flow / repeat(auto-fit, minmax(32ch, 1fr))" ]
 
 grid : Style
-grid = Css.batch [ property "display" "grid", property "gap" "20px", property "grid-template-rows" "1fr auto" ]
+grid = Css.batch [ property "display" "grid", property "gap" "12px", property "grid-template-rows" "1fr auto" ]
 
 brickPattern : String
 brickPattern = """
@@ -49,4 +49,4 @@ insetBorder = Css.batch [ bigBorder, borderStyle inset ]
 outsetBorder = Css.batch [ bigBorder, borderStyle outset ]
 
 btn : List (Attribute msg) -> List (Html msg) -> Html msg
-btn = styled button [ fontFamily monospace, fontSize (Css.em 1.5), padding (px 4) ]
+btn = styled button [ outsetBorder, fontFamily monospace, fontSize (Css.em 1.5), padding2 (px 6) (px 4) ]

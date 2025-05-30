@@ -8,23 +8,27 @@ import Html.Styled.Attributes exposing (css, spellcheck)
 import Html.Styled.Events exposing (onClick, onInput)
 import Model exposing (..)
 import Styles exposing (..)
-import Css.Global exposing (global)
-import Css.Global exposing (html)
+import Css.Global exposing (global, html, body)
 
 type Cell = B BotEntity | O Obj | Empty
 
 renderView : Model -> Html.Html Msg
 renderView model = (main_
     [ css [  mainLayout, fontFamilies [.value monospace] ] ]
-    [ global [ html [ property "color-scheme" "light dark" ]]
-    , editor [ property "grid-area" "editor" ]
-    , debugOutput [ css [ property "grid-area" "debug" ]] [ text (showDebug model)]
+    [ global
+        [ html [ property "color-scheme" "light dark" ]
+        , body [ height (vh 100) ]
+        ]
+    , editor model [ property "grid-area" "editor" ]
     , div
         [ css
         [ property "grid-area" "map"
         , grid
+        , property "grid-template-rows" "auto 1fr auto"
+        , height (pct 100)
+        , overflow scroll
         ]]
-        [ Html.Styled.table
+        [   Html.Styled.table
             [ css
             [ borderCollapse collapse
             , margin auto
@@ -32,6 +36,13 @@ renderView model = (main_
             ]]
             ((List.range 0 (Tuple.second model.world.arena.size))
                 |> List.map (renderRow model.world))
+        , debugOutput
+            [ css 
+                [ overflow scroll
+                , lineHeight (num 1.5)
+                ]
+            ]
+            [ text (showDebug model) ]
         , actionRow [] [ btn [ onClick RunStep ] [ text "Run Step" ] ]
     ]]) 
     |> toUnstyled
@@ -39,9 +50,14 @@ renderView model = (main_
 mainLayout : Style
 mainLayout = Css.batch 
     [ grid
-    , property "grid-template" "'editor map debug' auto / 1fr 480px 1fr"
+    , property "grid-template" "'editor map debug' auto / 1fr auto"
     , padding (Css.em 2)
+    , height (pct 100)
+    , boxSizing borderBox
     ]
+
+listBots : List { a | name : String } -> String
+listBots bots = (bots |> List.map (\b -> b.name ) |> String.join " vs. ")
 
 getObj : List Obj -> Coord -> Maybe Obj
 getObj os c = case os of
@@ -110,7 +126,7 @@ renderWall = div
     , property "background-image" brickPattern
     , size (pct 100)
     , backgroundSize2 (px 20) (px 35)
-    , opacity (num 0.8)
+    , opacity (num 0.95)
     , property "background-position" "0 0, 0 0, 10px 18px, 10px 18px, 0 0, 10px 18px"
     ]] []
 
@@ -155,13 +171,12 @@ showCond c = case c of
 
 showProgram : Int -> List Instr -> String
 showProgram pc is = is
-    |> List.indexedMap (\i a -> showInstruction a ++ (if i == pc then " <-" else ""))
+    |> List.indexedMap (\i a -> (if i == pc then "→ " else " ") ++ showInstruction a)
     |> List.foldr (\a b -> a ++ "\n" ++ b) ""
 
 showDebug : Model -> String
 showDebug { world } = case world.bots of
     (playerBot::_) -> (showProgram playerBot.pc playerBot.program)
-        ++ (world.bots |> List.map (\b -> b.name ) |> String.join "\n")
     _ -> ""
 
 debugOutput : StyledElement msg
@@ -173,19 +188,24 @@ debugOutput = styled div
     , outsetBorder
     ]
 
-editor : List Style -> Html Msg
-editor style =
+editor : Model -> List Style -> Html Msg
+editor model style =
     div
-      [ css (grid :: style) ]
-      [ textarea
+      [ css (
+        [grid,
+        property "grid-template-rows" "auto 1fr"
+        ] ++ style) ]
+      [ debugOutput [] [ text (listBots model.world.bots) ]
+        , textarea
           [ onInput UpdateScript
           , spellcheck False
           , css
               [ resize none
               , fontSize (Css.em 1.5)
-              , padding (px 8)
+              , padding (px 12)
               , textTransform uppercase
               , insetBorder
+              , lineHeight (num 1.5)
               ]
           ] []
       , actionRow [] [ btn [ onClick StoreScript ] [ text "Save robo.script" ] ]
