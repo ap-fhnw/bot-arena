@@ -117,6 +117,7 @@ editor model style =
             [ onInput UpdateScript
             , Html.Styled.Events.preventDefaultOn "beforeinput"
                     ((D.field "inputType" D.string) |> D.andThen (\i -> D.succeed (NOOP, model.modifier && i == "insertLineBreak")))
+            , value model.script
             , spellcheck False
             , css
                 [ resize none
