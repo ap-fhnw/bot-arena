@@ -1,18 +1,18 @@
 module Main exposing (main)
 
 import Browser
-import Html exposing (Html)
 
 import Model exposing (..)
 import Parse exposing (parseBotScript)
 import Engine exposing (tick)
-import View exposing (renderView)
+import View exposing (renderView, subscriptions)
 
 -- MODEL
 
-init : Model
-init =
-    { script = ""
+init : () -> (Model, Cmd Msg)
+init _ =
+    ({ script = ""
+    , modifier = False
     , world =
         { tick = 0
         , queue = []
@@ -45,20 +45,21 @@ init =
             , objects = [ Wall (2, 2), Wall (2, 3) ]
             }
         }
-    }
-
--- VIEW
-
-view : Model -> Html Msg
-view = renderView
+    }, Cmd.none)
 
 -- UPDATE
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model = case msg of
-    StoreScript -> { model | world = loadScript model }
-    UpdateScript content -> { model | script = content }
-    RunStep -> { model | world = tick model.world }
+    StoreScript -> ({ model | world = loadScript model }, Cmd.none)
+    UpdateScript content -> ({ model | script = content }, Cmd.none)
+    RunStep -> ({ model | world = tick model.world }, Cmd.none)
+    ModifierDown k -> ({ model
+        | modifier = True 
+        , world = if k.key == "Enter" then loadScript model else model.world
+        }, Cmd.none)
+    ModifierUp _ -> ({ model | modifier = False }, Cmd.none)
+    NOOP -> (model, Cmd.none)
 
 loadScript : Model -> World
 loadScript { world, script } =
@@ -96,8 +97,9 @@ loadScript { world, script } =
 
 main : Program () Model Msg
 main =
-    Browser.sandbox
+    Browser.element
         { init = init
-        , view = view
+        , view = renderView
         , update = update
+        , subscriptions = subscriptions
         }
