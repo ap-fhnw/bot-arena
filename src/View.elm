@@ -4,18 +4,19 @@ import Debug exposing (toString)
 import Css exposing (..)
 import Html
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (css, spellcheck)
-import Html.Styled.Events exposing (onClick, onInput)
+import Html.Styled.Attributes exposing (css, spellcheck, type_)
+import Html.Styled.Events exposing (onClick, onInput, onCheck)
 import Model exposing (..)
 import Styles exposing (..)
 import Css.Global exposing (global, html, body)
 import Json.Decode as D
 import Browser.Events as Events
-import Html.Styled.Attributes exposing (type_)
-import Html.Styled.Attributes exposing (value)
-import Html.Styled.Events exposing (onCheck)
+import Time
 
 type Cell = B BotEntity | O Obj | Empty
+
+listBots : List { a | name : String } -> String
+listBots bots = (bots |> List.map (\b -> b.name ) |> String.join " vs. ")
 
 renderView : Model -> Html.Html Msg
 renderView model = (main_
@@ -52,17 +53,20 @@ renderView model = (main_
                 |> List.map (renderRow model.world))
         , debugOutput
             [ css 
-                [ overflow scroll
+                [ displayFlex
+                , flexDirection column
+                , overflow scroll
                 , lineHeight (num 1.5)
                 ]
             ]
-            [ label [] [ input [type_ "checkbox", value "Auto-load", onCheck AutoLoad ] [], text "auto-load"] ]
-        , actionRow [] [ btn [ onClick RunStep ] [ text "Run Step" ] ]
+            [ label [ css [ displayFlex, property "gap" "4px" ]] [ input [type_ "checkbox", onCheck AutoLoad ] [], text "Auto-load"] 
+            , label [ css [ displayFlex, property "gap" "4px" ]] [ input [type_ "checkbox", onCheck AutoRun ] [], text "Auto-run"]
+            ]
+        , actionRow []
+            [ btn [ onClick RunPause ] [ text (if model.isRunning then "Pause" else "Run")]
+            , btn [ onClick (RunStep False) ] [ text "Run Step" ] ]
     ]]) 
     |> toUnstyled
-
-listBots : List { a | name : String } -> String
-listBots bots = (bots |> List.map (\b -> b.name ) |> String.join " vs. ")
 
 editor : Model -> List Style -> Html Msg
 editor model style =
@@ -96,39 +100,6 @@ editor model style =
       , actionRow [] [ btn [ onClick StoreScript ] [ text "Save robo.script" ] ]
       ]
 
-getObj : List Obj -> Coord -> Maybe Obj
-getObj os c = case os of
-    [] -> Maybe.Nothing
-    (o :: oss) -> case o of
-        Wall cc -> if c == cc then Just o else getObj oss c
-        _ -> getObj oss c
-
-getBot : List BotEntity -> Coord -> Maybe BotEntity
-getBot bs c = case bs of
-    [] -> Maybe.Nothing
-    (b :: bss) -> if b.pos == c then Just b else getBot bss c
-
-cell : World -> Coord -> Cell
-cell world coord = case (getObj world.arena.objects coord) of
-    Just o -> O o
-    Maybe.Nothing -> case (getBot world.bots coord) of
-        Just b -> B b
-        _ -> Empty
-
-renderBot : BotEntity -> World -> Html Msg
-renderBot bot w = div
-    [ css [ transform (translateY (px 2))
-    , fontSize (Css.em 1.8)
-    , size (pct 100)
-    , property "display" "grid"
-    , alignItems center
-    ]]
-    [ Styles.pointer (toFloat bot.dirDeg)
-    , healthBarBase theme.healthBarBackground 100
-    , healthBarBase theme.healthBarForeground (100 * toFloat bot.hp / toFloat w.arena.maxHp)
-    , text (if bot.alive then "🤖" else "🪦")
-    ]
-
 renderRow : World -> Int -> Html Msg
 renderRow world row =
     tr [] ((List.range 0 (Tuple.second world.arena.size))
@@ -149,6 +120,39 @@ renderCell world pos = td
         O _ -> renderWall
         Empty -> text ""
     ]
+
+renderBot : BotEntity -> World -> Html Msg
+renderBot bot w = div
+    [ css [ transform (translateY (px 2))
+    , fontSize (Css.em 1.8)
+    , size (pct 100)
+    , property "display" "grid"
+    , alignItems center
+    ]]
+    [ Styles.pointer (toFloat bot.dirDeg)
+    , healthBarBase theme.healthBarBackground 100
+    , healthBarBase theme.healthBarForeground (100 * toFloat bot.hp / toFloat w.arena.maxHp)
+    , text (if bot.alive then "🤖" else "🪦")
+    ]
+
+getObj : List Obj -> Coord -> Maybe Obj
+getObj os c = case os of
+    [] -> Maybe.Nothing
+    (o :: oss) -> case o of
+        Wall cc -> if c == cc then Just o else getObj oss c
+        _ -> getObj oss c
+
+getBot : List BotEntity -> Coord -> Maybe BotEntity
+getBot bs c = case bs of
+    [] -> Maybe.Nothing
+    (b :: bss) -> if b.pos == c then Just b else getBot bss c
+
+cell : World -> Coord -> Cell
+cell world coord = case (getObj world.arena.objects coord) of
+    Just o -> O o
+    Maybe.Nothing -> case (getBot world.bots coord) of
+        Just b -> B b
+        _ -> Empty
 
 showInstruction : Instr -> String
 showInstruction i = case i of
@@ -190,9 +194,10 @@ debugOutput = styled div
     ]
     
 subscriptions : Model -> Sub Msg
-subscriptions _ = Sub.batch
+subscriptions m = Sub.batch
     [ Events.onKeyDown (keyEventDecoder |> D.andThen (checkHotkey True))
     , Events.onKeyUp (keyEventDecoder |> D.andThen (checkHotkey False))
+    , if (m.isRunning) then Time.every m.tickMs (\_ -> RunStep True) else Sub.none
     ]
 
 keyEventDecoder : D.Decoder KeyEvent

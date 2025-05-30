@@ -4,13 +4,18 @@ type alias Model =
     { script : String
     , modifier: Bool
     , autoLoad : Bool
+    , autoRun : Bool
+    , isRunning : Bool
+    , tickMs : Float
     , world : World
     }
 
 type Msg = UpdateScript String
     | StoreScript
-    | RunStep
+    | RunStep Bool
     | AutoLoad Bool
+    | AutoRun Bool
+    | RunPause
     | ModifierDown KeyEvent
     | ModifierUp KeyEvent
     | NOOP

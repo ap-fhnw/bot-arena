@@ -6,6 +6,7 @@ import Model exposing (..)
 import Parse exposing (parseBotScript)
 import Engine exposing (tick)
 import View exposing (renderView, subscriptions)
+import Task
 
 -- MODEL
 
@@ -14,6 +15,9 @@ init _ =
     ({ script = ""
     , modifier = False
     , autoLoad = False
+    , autoRun = False
+    , isRunning = False
+    , tickMs = 500
     , world =
         { tick = 0
         , queue = []
@@ -52,14 +56,19 @@ init _ =
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model = case msg of
-    StoreScript -> ({ model | world = loadScript model }, Cmd.none)
-    UpdateScript content -> ({ model | script = content, world = if model.autoLoad then loadScript model else model.world }, Cmd.none)
-    RunStep -> ({ model | world = tick model.world }, Cmd.none)
-    AutoLoad b -> ({ model | autoLoad = b }, Cmd.none)
-    ModifierDown k -> ({ model
-        | modifier = True 
-        , world = if k.key == "Enter" then loadScript model else model.world
-        }, Cmd.none)
+    StoreScript -> ({ model | world = loadScript model },
+        if model.autoRun && not model.isRunning then Task.perform (\_ -> RunPause) (Task.succeed 0)
+        else (if not model.autoRun && model.isRunning then Task.perform (\_ -> RunPause) (Task.succeed 0)
+        else Cmd.none))
+    UpdateScript content -> ({ model | script = content },
+        if model.autoLoad then Task.perform (\_ -> StoreScript) (Task.succeed 0) else Cmd.none)
+    RunStep c -> ({ model | isRunning = c, world = tick model.world }, Cmd.none)
+    RunPause -> ({ model | isRunning = not model.isRunning }, Cmd.none)
+    AutoLoad b -> ({ model | autoLoad = b },
+        if b then Task.perform (\_ -> StoreScript) (Task.succeed 0) else Cmd.none)
+    AutoRun b -> ({ model | autoRun = b, isRunning = model.isRunning || b }, Cmd.none)
+    ModifierDown k -> ({ model | modifier = True },
+        if k.key == "Enter" then Task.perform (\_ -> StoreScript) (Task.succeed True) else Cmd.none)
     ModifierUp _ -> ({ model | modifier = False }, Cmd.none)
     NOOP -> (model, Cmd.none)
 

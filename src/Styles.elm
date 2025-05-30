@@ -35,7 +35,7 @@ renderWall = div
     , opacity (num 0.95)
     , property "background-position" "0 0, 0 0, 10px 18px, 10px 18px, 0 0, 10px 18px"
     ]] []
-    
+
 healthBarBase : Color -> Float -> Html msg
 healthBarBase col w = div
     [ css [ position absolute
@@ -74,7 +74,7 @@ brickPattern = """
 """
 
 actionRow : StyledElement msg
-actionRow = styled div [ grid, property "grid" "auto-flow / repeat(auto-fit, minmax(32ch, 1fr))" ]
+actionRow = styled div [ grid, property "grid" "auto-flow / repeat(auto-fit, minmax(18ch, 1fr))" ]
 
 grid : Style
 grid = Css.batch [ property "display" "grid", property "gap" "12px", property "grid-template-rows" "1fr auto" ]
