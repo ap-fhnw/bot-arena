@@ -17,7 +17,8 @@ init _ =
     , autoLoad = True
     , autoRun = True
     , isRunning = False
-    , tickMs = 500
+    , tickMs = 1000
+    , showParseResult = True
     , world =
         { tick = 0
         , queue = []
@@ -71,6 +72,8 @@ update msg model = case msg of
         if k.key == "Enter" then Task.perform (\_ -> StoreScript) (Task.succeed True) else Cmd.none)
     ModifierUp _ -> ({ model | modifier = False }, Cmd.none)
     NOOP -> (model, Cmd.none)
+    SetTicks ms -> ({ model | tickMs = ms }, Cmd.none)
+    ToggleProcess b -> ({ model | showParseResult = b }, Cmd.none)
 
 loadScript : Model -> World
 loadScript { world, script } =

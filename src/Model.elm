@@ -7,17 +7,20 @@ type alias Model =
     , autoRun : Bool
     , isRunning : Bool
     , tickMs : Float
+    , showParseResult : Bool
     , world : World
     }
 
 type Msg = UpdateScript String
     | StoreScript
-    | RunStep Bool
     | AutoLoad Bool
     | AutoRun Bool
+    | ToggleProcess Bool
     | RunPause
+    | RunStep Bool
     | ModifierDown KeyEvent
     | ModifierUp KeyEvent
+    | SetTicks Float
     | NOOP
 
 type alias KeyEvent =

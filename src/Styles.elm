@@ -82,8 +82,13 @@ grid = Css.batch [ property "display" "grid", property "gap" "12px", property "g
 size : LengthOrAuto c -> Style
 size c = Css.batch [ width c, height c ]
 
+bigBorder : Style
 bigBorder  = border3 (px 6) outset theme.gridLines
+
+insetBorder : Style
 insetBorder = Css.batch [ bigBorder, borderStyle inset ]
+
+outsetBorder : Style
 outsetBorder = Css.batch [ bigBorder, borderStyle outset ]
 
 btn : List (Attribute msg) -> List (Html msg) -> Html msg

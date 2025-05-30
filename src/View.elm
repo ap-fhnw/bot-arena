@@ -4,7 +4,7 @@ import Debug exposing (toString)
 import Css exposing (..)
 import Html
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (css, spellcheck, type_)
+import Html.Styled.Attributes exposing (css, spellcheck, value type_)
 import Html.Styled.Events exposing (onClick, onInput, onCheck)
 import Model exposing (..)
 import Styles exposing (..)
@@ -59,8 +59,30 @@ renderView model = (main_
                 , lineHeight (num 1.5)
                 ]
             ]
-            [ label [ css [ displayFlex, property "gap" "4px" ]] [ input [type_ "checkbox", onCheck AutoLoad ] [], text "Auto-load"] 
-            , label [ css [ displayFlex, property "gap" "4px" ]] [ input [type_ "checkbox", onCheck AutoRun ] [], text "Auto-run"]
+            [ label
+                [ css [ grid, property "grid-template-columns" "20ch auto", property "gap" "4px" ]]
+                [ text "Auto-load"
+                , input [ type_ "checkbox", onCheck AutoLoad, Html.Styled.Attributes.checked model.autoLoad ] []] 
+            , label
+                [ css [ grid, property "grid-template-columns" "20ch auto", property "gap" "4px" ]]
+                [ text "Auto-run"
+                , input [ type_ "checkbox", onCheck AutoRun, Html.Styled.Attributes.checked model.autoRun ] []]
+            , label
+                [ css [ grid, property "grid-template-columns" "20ch auto", property "gap" "4px" ]]
+                [ text ("Tick " ++ (toString model.tickMs) ++ "ms")
+                , input
+                    [ type_ "range"
+                    , value (toString model.tickMs)
+                    , Html.Styled.Attributes.min "100"
+                    , Html.Styled.Attributes.max "3000"
+                    , Html.Styled.Attributes.step "100"
+                    , onInput (\s -> SetTicks (Maybe.withDefault 500 (String.toFloat s)))
+                    ] []
+                ]
+            , label
+                [ css [ grid, property "grid-template-columns" "20ch auto", property "gap" "4px" ]]
+                [ text "Display process"
+                , input [ type_ "checkbox", onCheck ToggleProcess, Html.Styled.Attributes.checked model.showParseResult ] []]
             ]
         , actionRow []
             [ btn [ onClick RunPause ] [ text (if model.isRunning then "Pause" else "Run")]
@@ -71,32 +93,41 @@ renderView model = (main_
 editor : Model -> List Style -> Html Msg
 editor model style =
     div
-      [ css ([ grid, property "grid-template-rows" "auto 1fr" ] ++ style) ]
-      [ debugOutput [ css [ fontSize (Css.em 1.6), displayFlex, justifyContent center ]] [ text (listBots model.world.bots) ]
-        , div [css [grid, property "grid-template-columns" "1fr 1fr", property "grid-template-rows" "auto", height (pct 100), overflow scroll]]
-            [ debugOutput
-            [ css 
+        [ css ([ grid, property "grid-template-rows" "auto 1fr" ] ++ style) ]
+        [ debugOutput
+            [ css [ fontSize (Css.em 1.6), displayFlex, justifyContent center ]]
+            [ text (listBots model.world.bots) ]
+        , div
+            [ css
+            [ grid
+            , property "grid-template-columns" (if model.showParseResult then "1fr 1fr" else "1fr")
+            , property "grid-template-rows" "auto"
+            , height (pct 100), overflow scroll
+            ]]
+            ((if model.showParseResult
+                then [debugOutput
+                [ css 
                 [ overflow scroll
                 , lineHeight (num 1.5)
                 , order (num 1)
+                ]]
+                [ text (showDebug model) ]]
+                else []) ++
+            [ textarea
+            [ onInput UpdateScript
+            , Html.Styled.Events.preventDefaultOn "beforeinput"
+                    ((D.field "inputType" D.string) |> D.andThen (\i -> D.succeed (NOOP, model.modifier && i == "insertLineBreak")))
+            , spellcheck False
+            , css
+                [ resize none
+                , fontSize (Css.em 1.5)
+                , padding (px 12)
+                , textTransform uppercase
+                , insetBorder
+                , lineHeight (num 1.5)
                 ]
-            ]
-            [ text (showDebug model) ]
-        , textarea
-          [ onInput UpdateScript
-          , Html.Styled.Events.preventDefaultOn "beforeinput"
-                ((D.field "inputType" D.string) |> D.andThen (\i -> D.succeed (NOOP, model.modifier && i == "insertLineBreak")))
-          , spellcheck False
-          , css
-              [ resize none
-              , fontSize (Css.em 1.5)
-              , padding (px 12)
-              , textTransform uppercase
-              , insetBorder
-              , lineHeight (num 1.5)
-              ]
-          ] []
-        ]
+            ] []
+            ])
       , actionRow [] [ btn [ onClick StoreScript ] [ text "Save robo.script" ] ]
       ]
 
