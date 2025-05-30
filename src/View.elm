@@ -160,8 +160,8 @@ showInstruction i = case i of
     Scan -> "SCAN"
     Fire x y -> "FIRE " ++ toString x ++ " " ++ toString y
     Repeat n instr -> "REPEAT " ++ toString n ++ " " ++ showInstruction instr
-    IfThenElse cond i1 i2 -> "IF " ++ showCond cond ++ " THEN " ++ showInstruction i1 ++ " ELSE " ++ showInstruction i2
-    While cond instr -> "WHILE " ++ showCond cond ++ " DO " ++ showInstruction instr
+    IfThenElse cond i1 i2 -> "IF (" ++ showCond cond ++ ") ? " ++ showInstruction i1 ++ " : " ++ showInstruction i2
+    While cond instr -> "WHILE (" ++ showCond cond ++ ") " ++ showInstruction instr
     _ -> "?"
 
 showCond : Cond -> String
