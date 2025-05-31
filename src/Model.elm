@@ -63,6 +63,7 @@ type alias BotEntity =
     , program    : List Instr       -- Ergebnis des Parsers
     , pc         : Int              -- Program-Counter
     , alive      : Bool
+    , fireAt     : Maybe Coord  
     , viewEnv    : List (Coord, Obj)
     }
 

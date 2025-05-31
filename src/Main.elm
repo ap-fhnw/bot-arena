@@ -31,6 +31,7 @@ init _ =
             , program = []
             , pc = 0
             , alive = True
+            , fireAt = Nothing
             , viewEnv = []
             }, 
             { id = 2
@@ -41,6 +42,7 @@ init _ =
             , program = []
             , pc = 0
             , alive = True
+            , fireAt = Nothing
             , viewEnv = []
             }]
         , arena =
@@ -86,6 +88,7 @@ loadScript { world, script } =
         , program = parseBotScript script
         , pc = 0
         , alive = True
+        , fireAt = Nothing
         , viewEnv = []
         },
         { id = 2
@@ -102,6 +105,7 @@ loadScript { world, script } =
             FIRE 0 1 """
         , pc = 0
         , alive = True
+        , fireAt = Nothing
         , viewEnv = []
         }
         ]
