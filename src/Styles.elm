@@ -87,9 +87,9 @@ outsetBorder = Css.batch [ bigBorder, borderStyle outset, boxSizing borderBox ]
 
 btn : List (Attribute msg) -> List (Html msg) -> Html msg
 btn = styled button
-    [ active [ insetBorder,  textShadow4 (px 2) (px 3) (px 3) (rgba 0 0 0 0.7)]
+    [ active [ insetBorder,  textShadow4 (px 2) (px 3) (px 3) (rgba 50 50 50 0.7)]
     , outsetBorder
-    , textShadow3 (px 1) (px 2) (rgba 0 0 0 0.7)
+    , textShadow3 (px 1) (px 1) (rgba 50 50 50 0.4)
     , fontFamily monospace
     , fontSize (Css.em 1.5)
     , padding2 (px 6) (px 4)
