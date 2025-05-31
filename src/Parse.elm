@@ -153,6 +153,14 @@ lazyInstr thunk =
     ignoreLeft spaces (lazy thunk) -- removes spaces before
 
 -- Parser
+turnArg : Parser Int
+turnArg = oneOf
+    [ map (\_ -> -90)  (token "LEFT")
+    , map (\_ ->  90)  (token "RIGHT")
+    , map (\_ -> 180)  (token "BEHIND")
+    , intToken
+    ]
+
 parseCond : Parser Cond
 parseCond = oneOf
         [ map Not (ignoreLeft (token "NOT") (lazy (\_ -> parseCond)))
@@ -183,7 +191,7 @@ parseInstr = oneOf
             intToken
 
         , map Move (ignoreLeft (token "MOVE") intToken)
-        , map Turn (ignoreLeft (token "TURN") intToken)
+        , map Turn (ignoreLeft (token "TURN") turnArg)
         , ignoreLeft (token "SCAN") (succeed Scan)
         , ignoreLeft (token "NOTHING") (succeed NoOp)
         ]
