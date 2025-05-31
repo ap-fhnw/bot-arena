@@ -84,11 +84,11 @@ beginnerWorld m =
         [ createBot 1 "Foo" (4, 2) 90 (parseBotScript m.script)
         , createBot 2 "Bar" (4, 6) -90 (parseBotScript """
             MOVE 1
-            TURN 90
-            FIRE 0 0
+            TURN right
+            FIRE 0
             MOVE 1
-            TURN 90
-            FIRE 0 1
+            TURN right
+            FIRE 0
             """)
         ]
     , arena =
@@ -108,11 +108,11 @@ prisonWorld m =
         [ createBot 1 "Foo" (3, 2) 180 (parseBotScript m.script)
         , createBot 2 "Bar" (4, 5) 0 (parseBotScript """
             MOVE 1
-            TURN 90
-            FIRE 0 0
+            TURN right
+            FIRE 1
             MOVE 1
-            TURN 90
-            FIRE 0 1
+            TURN right
+            FIRE 1
             """)
         ]
     , arena =
