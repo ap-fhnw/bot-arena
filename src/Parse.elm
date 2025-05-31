@@ -137,6 +137,14 @@ parseCond = oneOf
         , map (\_ -> LowHp)      (token "LOWHP")
         ]
 
+parseTurnDir : Parser Model.TurnDir
+parseTurnDir = oneOf
+    [ map (\_ -> Model.RIGHT) (token "RIGHT")
+    , map (\_ -> Model.LEFT)  (token "LEFT")
+    , map (\_ -> Model.AROUND)  (token "AROUND")
+    , map (\_ -> Model.STRAIGHT)  (token "STRAIGHT")
+    ]
+
 parseInstr : Parser Instr
 parseInstr = oneOf
         -- IF cond THEN instr ELSE instr
@@ -158,7 +166,7 @@ parseInstr = oneOf
             intToken
 
         , map Move (ignoreLeft (token "MOVE") intToken)
-        , map Turn (ignoreLeft (token "TURN") intToken)
+        , map Turn (ignoreLeft (token "TURN") parseTurnDir)
         , ignoreLeft (token "SCAN") (succeed Scan)
         , ignoreLeft (token "NOTHING") (succeed NoOp)
         ]

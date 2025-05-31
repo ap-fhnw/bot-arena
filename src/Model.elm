@@ -37,11 +37,16 @@ type alias KeyEvent =
 type alias BotId     = Int
 type alias Tick      = Int
 type alias Coord     = (Int, Int)
+type TurnDir
+    = RIGHT     -- +90 Grad
+    | LEFT      -- -90 Grad
+    | AROUND    -- 180 Grad (Umdrehen)
+    | STRAIGHT  -- Geradeaus (0 Grad, nicht drehen)
 
 -- Instruktionen, die der Parser aus der DSL erzeugt
 type Instr
     = Move Int              -- Felder vorwärts
-    | Turn Int              -- Grad (+ = rechts)
+    | Turn TurnDir          -- Grad (+ = rechts)
     | Scan                  -- Feld-of-View -> Event
     | Fire Int Int          -- Rel. Koord.
     | NoOp

@@ -3,7 +3,7 @@ module ParseTest exposing (tests)
 import Expect
 import Parse exposing (parseBotScript)
 import Test exposing (..)
-import Model exposing (Instr(..), Cond(..))
+import Model exposing (Instr(..), Cond(..), TurnDir(..))
 
 -- Helper function
 parse : String -> Maybe Instr
@@ -23,8 +23,8 @@ tests = describe "parseBotScript"
 
         , test "TURN" <|
             \_ ->
-                parse "TURN -90"
-                    |> Expect.equal (Just <| Turn -90)
+                parse "TURN LEFT"
+                    |> Expect.equal (Just <| Turn LEFT)
 
         , test "SCAN" <|
             \_ ->
@@ -71,11 +71,11 @@ tests = describe "parseBotScript"
 
         , test "NOT WALLAHEAD" <|
             \_ ->
-                parse "IF NOT WALLAHEAD THEN TURN 90 ELSE MOVE 1"
+                parse "IF NOT WALLAHEAD THEN TURN RIGHT ELSE MOVE 1"
                     |> Expect.equal
                         (Just <|
                             IfThenElse (Not WallAhead)
-                                (Turn 90)
+                                (Turn RIGHT)
                                 (Move 1)
                         )
         , test "multiline REPEAT + IF Block" <|
@@ -83,11 +83,11 @@ tests = describe "parseBotScript"
                 parseBotScript """
                 REPEAT 10
                     IF WALLAHEAD
-                        THEN TURN 90
+                        THEN TURN RIGHT
                     ELSE MOVE 1
                 """
                 |> Expect.equal
-                    [ Repeat 10 (IfThenElse WallAhead (Turn 90) (Move 1)) ]
+                    [ Repeat 10 (IfThenElse WallAhead (Turn RIGHT) (Move 1)) ]
 
                 ]
     ]
