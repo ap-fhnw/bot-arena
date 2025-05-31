@@ -53,6 +53,7 @@ type Cond
     = EnemyAhead
     | WallAhead
     | LowHp
+    | Always
     | Not Cond
 
 -- Ein einzelner Bot im Spielzustand

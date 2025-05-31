@@ -140,6 +140,9 @@ evalCond w b cond =
         LowHp ->
             b.hp < (w.arena.maxHp // 2)
 
+        Always ->
+            True
+
         Not c ->
             not (evalCond w b c)
 
