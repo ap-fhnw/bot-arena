@@ -134,7 +134,7 @@ editor model style =
             , Html.Styled.Events.preventDefaultOn "beforeinput"
                     ((D.field "inputType" D.string) |> D.andThen (\i -> D.succeed (NOOP, model.modifier && i == "insertLineBreak")))
             , value model.script
-            , placeholder "MOVE 1\nTURN 90\nFIRE 1 0\n..."
+            , placeholder "MOVE 1\nTURN 90\nFIRE 1 0\nREPEAT 3 MOVE 1\nIF ENEMYAHEAD THEN FIRE 1 0 ELSE TURN -90\nWHILE NOT LOWHP DO SCAN\n..."
             , spellcheck False
             , css
                 [ resize none
