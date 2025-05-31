@@ -9,49 +9,37 @@ import View exposing (renderView, subscriptions)
 import Task
 
 -- MODEL
+createBot : Int -> String -> Coord -> Int -> List Instr -> BotEntity
+createBot id name pos dir pgr = { id=id, name=name, pos=pos, dirDeg=dir, hp=10, program=pgr, pc=0, alive=True, viewEnv=[] }
 
 init : () -> (Model, Cmd Msg)
-init _ =
-    ({ script = ""
+init _ = (
+    { script = ""
     , modifier = False
     , autoLoad = True
     , autoRun = True
     , isRunning = False
-    , tickMs = 1000
+    , tickMs = 500
     , showParseResult = True
+    , arena = "prison"
     , world =
         { tick = 0
         , queue = []
-        , bots = [
-            { id = 1
-            , name = "Foo"
-            , pos = (0, 0)
-            , dirDeg = 180
-            , hp = 10
-            , program = []
-            , pc = 0
-            , alive = True
-            , viewEnv = []
-            }, 
-            { id = 2
-            , name = "Bar"
-            , pos = (5, 5)
-            , dirDeg = -90
-            , hp = 10
-            , program = []
-            , pc = 0
-            , alive = True
-            , viewEnv = []
-            }]
+        , bots = 
+            [ createBot 1 "Foo" (4, 2) 90 []
+            , createBot 2 "Bar" (4, 6) -90 []
+            ]
         , arena =
             { size = (8, 8)
             , goAround = False
             , maxHp = 10
             , seed = 0
-            , objects = [ Wall (2, 2), Wall (2, 3) ]
+            , objects = List.map Wall [ (2, 2), (2, 6), (6, 2), (6, 6) ]
             }
         }
-    }, Cmd.none)
+    }
+    , Cmd.none
+    )
 
 -- UPDATE
 
@@ -74,45 +62,69 @@ update msg model = case msg of
     NOOP -> (model, Cmd.none)
     SetTicks ms -> ({ model | tickMs = ms }, Cmd.none)
     ToggleProcess b -> ({ model | showParseResult = b }, Cmd.none)
+    SetArena option -> ({ model | arena = option }, Task.perform (\_ -> StoreScript) (Task.succeed 0))
+
+beginnerWorld : Model -> World
+beginnerWorld m = { tick = 0
+        , queue = []
+        , bots = 
+            [ createBot 1 "Foo" (4, 2) 90 (parseBotScript m.script)
+            , createBot 2 "Bar" (4, 6) -90 (parseBotScript """
+                MOVE 1
+                TURN 90
+                FIRE 0 0
+                MOVE 1
+                TURN 90
+                FIRE 0 1
+                """)
+            ]
+        , arena =
+            { size = (8, 8)
+            , goAround = False
+            , maxHp = 10
+            , seed = 0
+            , objects = List.map Wall [ (2, 2), (2, 6), (6, 2), (6, 6) ]
+            }
+        }
+prisonWorld : Model -> World
+prisonWorld m = { tick = 0
+        , queue = []
+        , bots = 
+            [ createBot 1 "Foo" (3, 2) 180 (parseBotScript m.script)
+            , createBot 2 "Bar" (4, 5) 0 (parseBotScript """
+                MOVE 1
+                TURN 90
+                FIRE 0 0
+                MOVE 1
+                TURN 90
+                FIRE 0 1
+                """)
+            ]
+        , arena =
+            { size = (7, 7)
+            , goAround = False
+            , maxHp = 10
+            , seed = 0
+            , objects = List.map Wall ((List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (0, i + 1)))
+                ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (i, 0)))
+                ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (i + 1, 7)))
+                ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (7, i))))
+            }
+        }
 
 loadScript : Model -> World
-loadScript { world, script } =
-    { world | bots = [
-        { id = 1
-        , name = "Foo"
-        , pos = (0, 0)
-        , dirDeg = 180
-        , hp = 10
-        , program = parseBotScript script
-        , pc = 0
-        , alive = True
-        , viewEnv = []
-        },
-        { id = 2
-        , name = "Bar"
-        , pos = (5, 5)
-        , dirDeg = 0
-        , hp = 10
-        , program = parseBotScript """
-            MOVE 1
-            TURN 90
-            FIRE 0 0
-            MOVE 1
-            TURN 90
-            FIRE 0 1 """
-        , pc = 0
-        , alive = True
-        , viewEnv = []
-        }
-        ]
-    }
+loadScript m = case m.arena of
+    "beginner" -> beginnerWorld m
+    "prison" -> prisonWorld m
+    _ -> beginnerWorld m
 
 -- MAIN
 
 main : Program () Model Msg
 main =
+    let (w, c) = init () in 
     Browser.element
-        { init = init
+        { init = (\_ -> ({ w | world = loadScript w }, c)) 
         , view = renderView
         , update = update
         , subscriptions = subscriptions

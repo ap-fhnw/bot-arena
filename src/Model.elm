@@ -2,12 +2,13 @@ module Model exposing (..)
 
 type alias Model =
     { script : String
-    , modifier: Bool
+    , modifier : Bool
     , autoLoad : Bool
     , autoRun : Bool
     , isRunning : Bool
     , tickMs : Float
     , showParseResult : Bool
+    , arena : String
     , world : World
     }
 
@@ -21,6 +22,7 @@ type Msg = UpdateScript String
     | ModifierDown KeyEvent
     | ModifierUp KeyEvent
     | SetTicks Float
+    | SetArena String
     | NOOP
 
 type alias KeyEvent =

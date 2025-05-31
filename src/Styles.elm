@@ -67,6 +67,9 @@ pointer angle = div [ css
 actionRow : StyledElement msg
 actionRow = styled div [ grid, property "grid" "auto-flow / repeat(auto-fit, minmax(18ch, 1fr))" ]
 
+setting : StyledElement msg
+setting = styled label [ grid, property "grid-template-columns" "20ch auto", property "gap" "4px" ]
+
 grid : Style
 grid = Css.batch [ property "display" "grid", property "gap" "12px", property "grid-template-rows" "1fr auto" ]
 
@@ -83,4 +86,11 @@ outsetBorder : Style
 outsetBorder = Css.batch [ bigBorder, borderStyle outset, boxSizing borderBox ]
 
 btn : List (Attribute msg) -> List (Html msg) -> Html msg
-btn = styled button [ outsetBorder, fontFamily monospace, fontSize (Css.em 1.5), padding2 (px 6) (px 4) ]
+btn = styled button
+    [ active [ insetBorder,  textShadow4 (px 2) (px 3) (px 3) (rgba 0 0 0 0.7)]
+    , outsetBorder
+    , textShadow3 (px 1) (px 2) (rgba 0 0 0 0.7)
+    , fontFamily monospace
+    , fontSize (Css.em 1.5)
+    , padding2 (px 6) (px 4)
+     ]

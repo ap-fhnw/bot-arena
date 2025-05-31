@@ -4,7 +4,7 @@ import Debug exposing (toString)
 import Css exposing (..)
 import Html
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (css, spellcheck, value, type_)
+import Html.Styled.Attributes exposing (css, spellcheck, value, type_, attribute)
 import Html.Styled.Events exposing (onClick, onInput, onCheck)
 import Model exposing (..)
 import Styles exposing (..)
@@ -59,16 +59,13 @@ renderView model = (main_
                 , lineHeight (num 1.5)
                 ]
             ]
-            [ label
-                [ css [ grid, property "grid-template-columns" "20ch auto", property "gap" "4px" ]]
+            [ setting []
                 [ text "Auto-load"
                 , input [ type_ "checkbox", onCheck AutoLoad, Html.Styled.Attributes.checked model.autoLoad ] []] 
-            , label
-                [ css [ grid, property "grid-template-columns" "20ch auto", property "gap" "4px" ]]
+            , setting []
                 [ text "Auto-run"
                 , input [ type_ "checkbox", onCheck AutoRun, Html.Styled.Attributes.checked model.autoRun ] []]
-            , label
-                [ css [ grid, property "grid-template-columns" "20ch auto", property "gap" "4px" ]]
+            , setting []
                 [ text ("Tick " ++ (toString model.tickMs) ++ "ms")
                 , input
                     [ type_ "range"
@@ -79,10 +76,20 @@ renderView model = (main_
                     , onInput (\s -> SetTicks (Maybe.withDefault 500 (String.toFloat s)))
                     ] []
                 ]
-            , label
-                [ css [ grid, property "grid-template-columns" "20ch auto", property "gap" "4px" ]]
+            , setting []
                 [ text "Display process"
-                , input [ type_ "checkbox", onCheck ToggleProcess, Html.Styled.Attributes.checked model.showParseResult ] []]
+                , input [ type_ "checkbox", onCheck ToggleProcess, Html.Styled.Attributes.checked model.showParseResult ] []
+                ]
+            , setting []
+                [ text "Arena"
+                , select
+                    [ onInput SetArena
+                    , value model.arena
+                    , css [margin2 (px 4) (px 0)]]
+                    [ option [value "beginner"] [text "Beginner vs. Bar"]
+                    , option [value "prison"] [text "Prison vs. Baz"]
+                    ]
+                ]
             ]
         , actionRow []
             [ btn [ onClick RunPause ] [ text (if model.isRunning then "Pause" else "Run")]
@@ -110,8 +117,12 @@ editor model style =
                 [ overflow scroll
                 , lineHeight (num 1.5)
                 , order (num 1)
+                , grid
+                , property "grid-template-rows" "auto auto 1fr"
                 ]]
-                [ text (showDebug model) ]]
+                [ showPlayerBot model.world
+                , hr [css [ margin (px 0), width (pct 110), transform (translateX (pct -5))]] []
+                , text (showDebug model)]]
                 else []) ++
             [ textarea
             [ onInput UpdateScript
@@ -126,11 +137,18 @@ editor model style =
                 , textTransform uppercase
                 , insetBorder
                 , lineHeight (num 1.5)
+                , margin (px 3)
                 ]
             ] []
             ])
-      , actionRow [] [ btn [ onClick StoreScript ] [ text "Save robo.script" ] ]
-      ]
+      , actionRow []
+        [ btn [ onClick StoreScript ] [ text ("Upload to " ++ (getBotName model.world.bots)) ] ]
+        ]
+
+getBotName : List BotEntity -> String
+getBotName bots = case bots of
+    (bot :: _) -> bot.name
+    [] -> "Unkown Bot"
 
 renderRow : World -> Int -> Html Msg
 renderRow world row =
@@ -211,9 +229,32 @@ showProgram pc is = case is of
         |> List.indexedMap (\i a -> (if i == pc then "→ " else " ") ++ showInstruction a)
         |> List.foldr (\a b -> a ++ "\n" ++ b) ""
 
+showPlayerBot : World -> Html Msg
+showPlayerBot w = case w.bots of
+    (b :: _) ->  fieldset
+        [ css
+        [ margin3 (px -8) (px -8) (px 4)
+        , border (px 0)
+        , padding (px 0)
+        , fontSize (Css.em 0.9)
+        , grid
+        , property "gap" "4px"
+        ]]
+        [ div [css[paddingLeft (px 2)]] [text b.name]
+        , meter 
+            [ value (toString b.hp)
+            , Html.Styled.Attributes.max (toString w.arena.maxHp)
+            , attribute "low" "3"
+            , attribute "optimum" "10"
+            , attribute "high" "8"
+            ] []
+        , div [css[paddingLeft (px 2), fontSize smaller]] [text ("PC " ++ (toString b.pc) ++ "\tPOS (" ++ (Tuple.first b.pos |> toString) ++ "," ++ (Tuple.second b.pos |> toString) ++ ")")]
+        ]
+    _ -> text "No INFO"
+
 showDebug : Model -> String
 showDebug { world } = case world.bots of
-    (playerBot::_) -> (showProgram playerBot.pc playerBot.program)
+    (playerBot::_) -> String.join "\n" [(showProgram playerBot.pc playerBot.program)]
     _ -> ""
 
 debugOutput : StyledElement msg
