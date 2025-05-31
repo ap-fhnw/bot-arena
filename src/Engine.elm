@@ -11,6 +11,7 @@ getObjPos obj =
         HealPack coord _ -> coord
         Bot entity       ->  entity.pos
 
+-- Helper functions 
 isInRadarRange : BotEntity -> List (Obj) -> Int -> Bool
 isInRadarRange bot objs n = 
     let
@@ -98,6 +99,22 @@ moveBot w b steps =
     in
     moveStepByStep steps b.pos
 
+turnBot : BotEntity -> Int -> Int
+turnBot b n =
+    if not b.alive then
+        -- If the bot is not alive, it cannot turn
+        b.dirDeg
+    else
+    -- Turn the bot by n degrees, ensuring it stays within 0-360 range
+    modBy 360 (b.dirDeg + n)
+
+fireAt : BotEntity -> Model.Coord -> Maybe Model.Coord
+fireAt b (x, y) =
+    if not b.alive then
+        Nothing
+    else
+        Just (x, y)
+
 evalCond : World -> BotEntity -> Cond -> Bool
 evalCond w b cond =
     case cond of
@@ -126,27 +143,18 @@ evalCond w b cond =
         Not c ->
             not (evalCond w b c)
 
--- Helper function to insert an instruction at the next program counter position
--- Used in If-Then-Else Conditional
-insertInstrAtNextPc : Instr -> BotEntity -> BotEntity
-insertInstrAtNextPc instr bot =
-    let
-        newProgram = List.take (bot.pc + 1) bot.program ++ (instr :: List.drop (bot.pc + 1) bot.program)
-    in
-    { bot | pc = bot.pc + 1, program = newProgram }
-
-runBot : World -> BotEntity -> BotEntity
-runBot w b = case (List.drop b.pc b.program ) of
+executeInstr : World -> BotEntity -> Instr -> BotEntity
+executeInstr w b instr = case instr of
     -- Move as long as there is no wall or object in the way
-    (Move n :: _) -> { b | pc = b.pc + 1, pos = moveBot w b n}
+    Move n -> { b | pc = b.pc + 1, pos = moveBot w b n}
     -- Turn 0, 90, 180, 270 degrees (up, right, down, left)
-    (Turn n :: _) -> { b | pc = b.pc + 1, dirDeg = modBy 360 (b.dirDeg + n) }
+    Turn n  -> { b | pc = b.pc + 1, dirDeg = turnBot b n }
     -- Scan environment, view angle is 90 degrees -> 45 degrees left and right
-    (Scan :: _)   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
+    Scan   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
     -- Fire at coordinate --> see run world function
-    (Fire _ _ :: _) ->  { b | pc = b.pc + 1 }
+    Fire x y ->  { b | pc = b.pc + 1, fireAt = fireAt b (x, y) }
     -- If-then-else instruction
-    (IfThenElse cond ifTrue ifFalse :: _) ->
+    IfThenElse cond ifTrue ifFalse ->
         if evalCond w b cond then
             insertInstrAtNextPc ifTrue b
         else
@@ -154,7 +162,7 @@ runBot w b = case (List.drop b.pc b.program ) of
             insertInstrAtNextPc ifFalse b
 
     -- While loop
-    (While cond body :: _) -> 
+    While cond body ->
         if evalCond w b cond then
             -- If condition is true, execute the body
             let
@@ -175,25 +183,53 @@ runBot w b = case (List.drop b.pc b.program ) of
                 { b | pc = b.pc + 1 }
 
     -- Repeat instruction
-    (Repeat n body :: _) ->
+    Repeat n body ->
         if n > 0 then
             let
-                -- Create a new Instruction list with the body repeated
-                instrToRepeat = List.repeat n body
-            in
-            -- Update the program counter to point to the next instruction after the repeat
-            if b.pc + 1 < List.length b.program then
-                -- Insert the repeated instructions at the current position
-                { b | pc = b.pc + 1, program = List.take (b.pc + 1) b.program ++ instrToRepeat ++ List.drop (b.pc + 1) b.program }
-            else
-                -- If we are at the end of the program, just append the repeated instructions 
-                { b | pc = b.pc + 1, program = instrToRepeat ++ (List.drop (b.pc + 1) b.program) }
-        else
-            { b | pc = b.pc + 1 } -- Skip the repeat if n is 0
+                -- Execute the first body instruction immediately
+                botAfterFirstExecution = executeInstr w b body
 
+                -- Create a list with remaining n-1 repetitions
+                remainingRepeats =
+                    if n > 1 then
+                        List.repeat (n - 1) body
+                    else
+                        []
+
+                -- Construct the new program with remaining repetitions
+                newProgram =
+                    if List.isEmpty remainingRepeats then
+                        -- No remaining repeats, just continue with the original program
+                        botAfterFirstExecution.program
+                    else
+                        -- Insert remaining repeats after the current position
+                        List.take (b.pc + 1) b.program ++
+                        remainingRepeats ++
+                        List.drop (b.pc + 1) b.program
+            in
+            -- Return the bot after executing the first instruction
+            { botAfterFirstExecution | program = newProgram }
+        else
+            -- Skip the repeat if n is 0
+            { b | pc = b.pc + 1 }
 
     -- No instruction or end of program
-    _ -> { b | pc = b.pc + 1 } 
+    _ -> { b | pc = b.pc + 1 }
+
+-- Used in If-Then-Else Conditional
+insertInstrAtNextPc : Instr -> BotEntity -> BotEntity
+insertInstrAtNextPc instr bot =
+    let
+        newProgram = List.take (bot.pc + 1) bot.program ++ (instr :: List.drop (bot.pc + 1) bot.program)
+    in
+    { bot | pc = bot.pc + 1, program = newProgram }
+
+runBot : World -> BotEntity -> BotEntity
+runBot w b = 
+    let
+        currentInstr = List.drop b.pc b.program |> List.head |> Maybe.withDefault NoOp
+    in
+    executeInstr w b currentInstr
 
 run : World -> (List BotEntity, List Model.BotId)
 run w =
@@ -203,15 +239,17 @@ run w =
                 updatedBot = runBot w b
                 -- If the bot just fired, try to find a hit
                 maybeHitId =
-                    case List.drop b.pc b.program of
-                        (Fire x y :: _) ->
-                            w.bots 
-                                |> List.filter (\bot -> liveBotAt bot (x, y)) -- You can commit suicide
+                    updatedBot.fireAt
+                        |> Maybe.andThen (\(x, y) ->
+                            w.bots
+                                |> List.filter (\target -> liveBotAt target (x, y))
                                 |> List.head
                                 |> Maybe.map .id
-                        _ -> Nothing
+                        )
+                -- Clear the fireAt field after firing
+                finalBot = { updatedBot | fireAt = Nothing }
             in
-            (updatedBot, maybeHitId)
+            (finalBot, maybeHitId)
         )
         |> List.foldr
             (\(updatedBot, maybeHitId) (bots, hitIds) ->

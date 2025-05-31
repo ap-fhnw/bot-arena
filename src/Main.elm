@@ -9,8 +9,20 @@ import View exposing (renderView, subscriptions)
 import Task
 
 -- MODEL
+
 createBot : Int -> String -> Coord -> Int -> List Instr -> BotEntity
-createBot id name pos dir pgr = { id=id, name=name, pos=pos, dirDeg=dir, hp=10, program=pgr, pc=0, alive=True, viewEnv=[] }
+createBot id name pos dir pgr =
+    { id = id
+    , name = name
+    , pos = pos
+    , dirDeg = dir
+    , hp = 10
+    , program = pgr
+    , pc = 0
+    , alive = True
+    , viewEnv = [] 
+    , fireAt = Nothing
+    }
 
 init : () -> (Model, Cmd Msg)
 init _ = (
@@ -65,52 +77,55 @@ update msg model = case msg of
     SetArena option -> ({ model | arena = option }, Task.perform (\_ -> StoreScript) (Task.succeed 0))
 
 beginnerWorld : Model -> World
-beginnerWorld m = { tick = 0
-        , queue = []
-        , bots = 
-            [ createBot 1 "Foo" (4, 2) 90 (parseBotScript m.script)
-            , createBot 2 "Bar" (4, 6) -90 (parseBotScript """
-                MOVE 1
-                TURN 90
-                FIRE 0 0
-                MOVE 1
-                TURN 90
-                FIRE 0 1
-                """)
-            ]
-        , arena =
-            { size = (8, 8)
-            , goAround = False
-            , maxHp = 10
-            , seed = 0
-            , objects = List.map Wall [ (2, 2), (2, 6), (6, 2), (6, 6) ]
-            }
+beginnerWorld m =
+    { tick = 0
+    , queue = []
+    , bots = 
+        [ createBot 1 "Foo" (4, 2) 90 (parseBotScript m.script)
+        , createBot 2 "Bar" (4, 6) -90 (parseBotScript """
+            MOVE 1
+            TURN 90
+            FIRE 0 0
+            MOVE 1
+            TURN 90
+            FIRE 0 1
+            """)
+        ]
+    , arena =
+        { size = (8, 8)
+        , goAround = False
+        , maxHp = 10
+        , seed = 0
+        , objects = List.map Wall [ (2, 2), (2, 6), (6, 2), (6, 6) ]
         }
+    }
+
 prisonWorld : Model -> World
-prisonWorld m = { tick = 0
-        , queue = []
-        , bots = 
-            [ createBot 1 "Foo" (3, 2) 180 (parseBotScript m.script)
-            , createBot 2 "Bar" (4, 5) 0 (parseBotScript """
-                MOVE 1
-                TURN 90
-                FIRE 0 0
-                MOVE 1
-                TURN 90
-                FIRE 0 1
-                """)
-            ]
-        , arena =
-            { size = (7, 7)
-            , goAround = False
-            , maxHp = 10
-            , seed = 0
-            , objects = List.map Wall ((List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (0, i + 1)))
-                ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (i, 0)))
-                ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (i + 1, 7)))
-                ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (7, i))))
-            }
+prisonWorld m =
+    { tick = 0
+    , queue = []
+    , bots = 
+        [ createBot 1 "Foo" (3, 2) 180 (parseBotScript m.script)
+        , createBot 2 "Bar" (4, 5) 0 (parseBotScript """
+            MOVE 1
+            TURN 90
+            FIRE 0 0
+            MOVE 1
+            TURN 90
+            FIRE 0 1
+            """)
+        ]
+    , arena =
+        { size = (7, 7)
+        , goAround = False
+        , maxHp = 10
+        , seed = 0
+        , objects = List.map Wall ((List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (0, i + 1)))
+            ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (i, 0)))
+            ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (i + 1, 7)))
+            ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (7, i))))
         }
+    }
 
 loadScript : Model -> World
 loadScript m = case m.arena of
