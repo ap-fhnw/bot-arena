@@ -1,4 +1,4 @@
-module Parse exposing (parseBotScript, parseScript)
+module Parse exposing (parseBotScript)
 
 import Model exposing (Instr(..), Cond(..))
 
@@ -201,9 +201,8 @@ parseScript : Parser (List Instr)
 parseScript = map2 (\instrs _ -> instrs) (some (ignoreLeft spaces parseInstr)) (ignoreLeft spaces endOfInput) 
 
 -- Top level Parser
-parseBotScript : String -> List Instr
-parseBotScript input = case parseScript (String.toUpper input) of
-    Ok ( instrs, rest ) ->
-        if String.isEmpty rest then instrs
-        else []
-    Err _ -> []
+parseBotScript : String -> Result String (List Instr)
+parseBotScript input =
+    parseScript (String.toUpper input)
+        |> Result.map Tuple.first
+        |> Result.mapError Tuple.second

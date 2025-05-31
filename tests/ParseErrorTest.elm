@@ -1,14 +1,13 @@
 module ParseErrorTest exposing (tests)
 
 import Expect
-import Parse exposing (parseScript)
+import Parse exposing (parseBotScript)
 import Test exposing (..)
 
 -- Complete Script Parser
-run : String -> Result String ( List (), String )
-run s = parseScript (String.toUpper s)
-    |> Result.mapError Tuple.second
-    |> Result.map (\( instrs, rest ) -> ( List.map (\_ -> ()) instrs, rest ))
+run : String -> Result String ( List () )
+run s = parseBotScript (String.toUpper s)
+    |> Result.map (List.map (\_ -> ()))
 
 tests : Test
 tests = describe "Fehlermeldungen des Parsers"

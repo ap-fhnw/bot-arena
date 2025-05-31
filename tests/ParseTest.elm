@@ -7,9 +7,9 @@ import Model exposing (Instr(..), Cond(..))
 
 -- Helper function
 parse : String -> Maybe Instr
-parse = \line -> case parseBotScript line of
-            [ i ] -> Just i
-            _     -> Nothing
+parse line = case parseBotScript line of
+    Ok [ i ] -> Just i
+    _        -> Nothing
 
 
 -- The Parser test
@@ -96,14 +96,15 @@ tests = describe "parseBotScript"
                         )
         , test "multiline REPEAT + IF Block" <|
             \_ ->
-                parseBotScript """
+                case parseBotScript """
                 REPEAT 10
                     IF WALLAHEAD
                         THEN TURN 90
                     ELSE MOVE 1
-                """
-                |> Expect.equal
-                    [ Repeat 10 (IfThenElse WallAhead (Turn 90) (Move 1)) ]
-
-                ]
+                """ of
+                    Ok instrs ->
+                        Expect.equal instrs [ Repeat 10 (IfThenElse WallAhead (Turn 90) (Move 1)) ]
+                    Err msg ->
+                        Expect.fail ("Parser error: " ++ msg)
+        ]
     ]
