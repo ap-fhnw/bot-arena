@@ -61,6 +61,11 @@ tests = describe "parseBotScript"
                 parse "WHILE LOWHP DO MOVE 1"
                     |> Expect.equal
                         (Just <| While LowHp (Move 1))
+
+        , test "WHILE TRUE DO …" <|
+            \_ ->
+                parse "WHILE TRUE DO MOVE 1"
+                    |> Expect.equal (Just <| While Always (Move 1))
         ]
     , describe "Conditions (inkl. NOT …)"
         [ test "ENEMYAHEAD" <|
