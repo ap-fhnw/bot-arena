@@ -12,6 +12,7 @@ import Css.Global exposing (global, html, body)
 import Json.Decode as D
 import Browser.Events as Events
 import Time
+import Html.Styled.Attributes exposing (placeholder)
 
 type Cell = B BotEntity | O Obj | Empty
 
@@ -85,7 +86,11 @@ renderView model = (main_
                 , select
                     [ onInput SetArena
                     , value model.arena
-                    , css [margin2 (px 4) (px 0)]]
+                    , css 
+                        [ margin2 (px 4) (px 0)
+                        , padding2 (px 4) (px 6)
+                        ]
+                    ]
                     [ option [value "beginner"] [text "Beginner vs. Bar"]
                     , option [value "prison"] [text "Prison vs. Baz"]
                     ]
@@ -129,6 +134,7 @@ editor model style =
             , Html.Styled.Events.preventDefaultOn "beforeinput"
                     ((D.field "inputType" D.string) |> D.andThen (\i -> D.succeed (NOOP, model.modifier && i == "insertLineBreak")))
             , value model.script
+            , placeholder "MOVE 1\nTURN 90\nFIRE 1 0\n..."
             , spellcheck False
             , css
                 [ resize none
