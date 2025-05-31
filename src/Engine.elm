@@ -3,6 +3,7 @@ module Engine exposing (tick)
 import Model exposing (World, Instr(..), Obj(..))
 import Model exposing (Cond(..))
 import Model exposing (BotEntity)
+import Model exposing (TurnDir(..))
 
 getObjPos : Obj -> Model.Coord
 getObjPos obj =
@@ -32,18 +33,18 @@ liveBotAt bot coord =
     bot.alive && bot.pos == coord
 
 scanEnvironment : World -> BotEntity -> List (Model.Coord, Obj)
-scanEnvironment w obj =
+scanEnvironment w bot =
     -- Scans the environment like a radar with max range (hard coded at the moment)
     let
         maxRadius = 4
 
         -- Scans for Objects and Bots in arena, and pairs them with their coordinates
         objectsInRange =
-            List.filter(\o -> isInRadarRange obj [o] maxRadius) w.arena.objects
+            List.filter(\o -> isInRadarRange bot [o] maxRadius) w.arena.objects
                 |> List.map (\o -> (getObjPos o, o))
         -- Scans for Bots in arena, and pairs them with their coordinates (right now scans himself too)
         botsInRange =
-            List.filter (\b -> isInRadarRange obj [Bot b] maxRadius) w.bots
+            List.filter (\b -> isInRadarRange bot [Bot b] maxRadius) w.bots
                 |> List.map (\b -> (b.pos, Bot b))
     in
         botsInRange ++ objectsInRange
@@ -99,14 +100,18 @@ moveBot w b steps =
     in
     moveStepByStep steps b.pos
 
-turnBot : BotEntity -> Int -> Int
+turnBot : BotEntity -> TurnDir -> Int
 turnBot b n =
     if not b.alive then
         -- If the bot is not alive, it cannot turn
         b.dirDeg
     else
-    -- Turn the bot by n degrees, ensuring it stays within 0-360 range
-    modBy 360 (b.dirDeg + n)
+    case n of
+        STRAIGHT -> b.dirDeg
+        RIGHT    -> modBy 360 (b.dirDeg + 90)
+        LEFT     -> modBy 360 (b.dirDeg - 90)
+        AROUND   -> modBy 360 (b.dirDeg + 180)
+
 
 fireAt : BotEntity -> Model.Coord -> Maybe Model.Coord
 fireAt b (x, y) =
@@ -150,9 +155,9 @@ executeInstr : World -> BotEntity -> Instr -> BotEntity
 executeInstr w b instr = case instr of
     -- Move as long as there is no wall or object in the way
     Move n -> { b | pc = b.pc + 1, pos = moveBot w b n}
-    -- Turn 0, 90, 180, 270 degrees (up, right, down, left)
+    -- Turn RIGHT, LEFT or AROUND
     Turn n  -> { b | pc = b.pc + 1, dirDeg = turnBot b n }
-    -- Scan environment, view angle is 90 degrees -> 45 degrees left and right
+    -- Scan environment, radarlike with radius
     Scan   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
     -- Fire at coordinate --> see run world function
     Fire x y ->  { b | pc = b.pc + 1, fireAt = fireAt b (x, y) }
@@ -171,7 +176,7 @@ executeInstr w b instr = case instr of
             let
                 botAfterBody = case body of
                     Move n -> { b | pos = moveBot w b n }
-                    Turn n -> { b | dirDeg = modBy 360 (b.dirDeg + n) }
+                    Turn n -> { b | dirDeg = turnBot b n }
                     Scan -> { b | viewEnv = scanEnvironment w b }
                     Fire _ _ -> { b | pc = b.pc + 1 } -- Fire does not change the bot state
                     _ -> { b | pc = b.pc + 1 } -- No operation, just move to next instruction
