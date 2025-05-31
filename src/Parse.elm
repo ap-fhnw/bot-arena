@@ -159,6 +159,7 @@ parseCond = oneOf
         , map (\_ -> EnemyAhead) (token "ENEMYAHEAD")
         , map (\_ -> WallAhead)  (token "WALLAHEAD")
         , map (\_ -> LowHp)      (token "LOWHP")
+        , map (\_ -> Always)     (token "TRUE")
         ]
 
 parseInstr : Parser Instr

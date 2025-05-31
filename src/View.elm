@@ -226,6 +226,7 @@ showCond c = case c of
     EnemyAhead -> "ENEMY-AHEAD"
     LowHp -> "LOW-HP"
     WallAhead -> "WALL-AHEAD"
+    Always -> "TRUE"
     Not inner -> "NOT " ++ showCond inner
 
 showProgram : Int -> List Instr -> String
