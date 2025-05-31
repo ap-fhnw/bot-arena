@@ -26,6 +26,17 @@ tests = describe "parseBotScript"
                 parse "TURN -90"
                     |> Expect.equal (Just <| Turn -90)
 
+        ,describe "TURN LEFT/RIGHT/BEHIND"
+            [ test "LEFT" <|
+                \_ -> parse "TURN LEFT"   |> Expect.equal (Just <| Turn -90)
+
+            , test "RIGHT" <|
+                \_ -> parse "TURN RIGHT"  |> Expect.equal (Just <| Turn 90)
+
+            , test "BEHIND" <|
+                \_ -> parse "TURN BEHIND" |> Expect.equal (Just <| Turn 180)
+            ]
+
         , test "SCAN" <|
             \_ ->
                 parse "SCAN"
