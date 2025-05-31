@@ -21,7 +21,7 @@ createBot id name pos dir pgr =
     , pc = 0
     , alive = True
     , viewEnv = [] 
-    , fireAt = Nothing
+    , fireAt = []
     }
 
 init : () -> (Model, Cmd Msg)

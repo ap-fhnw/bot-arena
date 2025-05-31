@@ -28,6 +28,13 @@ isInRadarRange bot objs n =
             distanceSquared <= n * n
     ) objs
 
+isInBounds : World -> Model.Coord -> Bool
+isInBounds w c =
+    let
+        (x, y) = c
+    in
+    x >= 0 && x < Tuple.second(w.arena.size) && y >= 0 && y < Tuple.first(w.arena.size)
+
 liveBotAt : BotEntity -> Model.Coord -> Bool
 liveBotAt bot coord =
     bot.alive && bot.pos == coord
@@ -77,9 +84,7 @@ moveBot w b steps =
                 ((dx, dy), (_, _)) = getBotDirAndPos b
 
                 -- Check if position is valid (within bounds, no wall, no bot)
-                isValidPos (x2, y2) = 
-                    x2 >= 0 && x2 <= Tuple.second(w.arena.size) && 
-                    y2 >= 0 && y2 <= Tuple.first(w.arena.size) &&
+                isValidPos (x2, y2) =  isInBounds w (x2, y2) &&
                     not (List.any (\obj ->
                         case obj of
                             Wall coord -> coord == (x2, y2)
@@ -113,17 +118,42 @@ turnBot b n =
         LEFT     -> modBy 360 (b.dirDeg - 90)
         AROUND   -> modBy 360 (b.dirDeg + 180)
 
-
-fireAt : BotEntity -> Int -> Maybe Model.Coord
-fireAt b n =
+fire : World -> BotEntity -> Int -> List Model.Coord
+fire w b n =
     if not b.alive then
-        Nothing
+        [] -- Can't Shoot at anything, I'm dead
     else
     let
         ((dx, dy), (x, y)) = getBotDirAndPos b
-        targetPos = (x + dx * n, y + dy * n)
+        bulletPath : Int -> Int -> Int -> List Model.Coord -> List Model.Coord
+        bulletPath currentDist currentX currentY acc = 
+            if currentDist > n then
+                acc
+            else
+                let
+                    currentPos = (currentX, currentY)
+
+                    -- Check if current position is a WALL -> yes then stop
+                    hasWall = List.any(\obj -> 
+                        case obj of
+                            Wall coord -> coord == currentPos
+                            _-> False
+                        ) w.arena.objects
+                    
+                    -- Check if current position is still within the world bounds
+                    inBounds = isInBounds w (currentX, currentY)
+                in
+                if not inBounds || hasWall then
+                    acc
+                else
+                    bulletPath
+                        (currentDist + 1)
+                        (currentX + dx)
+                        (currentY + dy)
+                        (currentPos :: acc)
+                        
     in
-        Just targetPos
+    bulletPath 1 (x + dx) (y + dy) [] |> List.reverse
 
 evalCond : World -> BotEntity -> Cond -> Bool
 evalCond w b cond =
@@ -133,9 +163,33 @@ evalCond w b cond =
             let
                 viewLength = 4
                 ((dx, dy), (x, y)) = getBotDirAndPos b
-                targetPos = (x + dx * viewLength, y + dy * viewLength)
+                checkPositions = 
+                    List.range 1 viewLength
+                        |> List.map (\dist -> (x + dist * dx, y + dist * dy))
+                
+                -- Check for walls
+                wallAt pos = List.any (\obj -> 
+                    case obj of
+                        Wall coord -> coord == pos
+                        _ -> False) w.arena.objects
+
+                -- Check for enemy, wall or out of bounds
+                checkLine positions =
+                    case positions of
+                        [] -> False
+                        pos :: rest ->
+                            if not (isInBounds w pos) || (wallAt pos) then
+                                False
+                            else
+                                let
+                                    enemyAtPos = List.any (\bot -> liveBotAt bot pos && bot.id /= b.id) w.bots
+                                in
+                                if enemyAtPos then
+                                    True
+                                else
+                                    checkLine rest
             in
-            List.any (\bot -> liveBotAt bot targetPos && bot.id /= b.id) w.bots
+            checkLine checkPositions
 
         WallAhead ->
             let
@@ -166,7 +220,7 @@ executeInstr w b instr = case instr of
     -- Scan environment, radarlike with radius
     Scan   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
     -- Fire at coordinate --> see run world function
-    Fire n ->  { b | pc = b.pc + 1, fireAt = fireAt b n }
+    Fire n ->  { b | pc = b.pc + 1, fireAt = fire w b n }
     -- If-then-else instruction
     IfThenElse cond ifTrue ifFalse ->
         if evalCond w b cond then
@@ -252,26 +306,23 @@ run w =
             let
                 updatedBot = runBot w b
                 -- If the bot just fired, try to find a hit
-                maybeHitId =
-                    updatedBot.fireAt
-                        |> Maybe.andThen (\(x, y) ->
-                            w.bots
-                                |> List.filter (\target -> liveBotAt target (x, y))
-                                |> List.head
-                                |> Maybe.map .id
-                        )
+                hitIds = List.concatMap(\pos ->
+                                w.bots
+                                    |> List.filter(\target ->
+                                        target.id /= updatedBot.id &&
+                                        liveBotAt target pos
+                                        )
+                                        |> List.map .id
+                                    ) updatedBot.fireAt
+                        
                 -- Clear the fireAt field after firing
-                finalBot = { updatedBot | fireAt = Nothing }
+                finalBot = { updatedBot | fireAt = []}
             in
-            (finalBot, maybeHitId)
+            (finalBot, hitIds)
         )
         |> List.foldr
-            (\(updatedBot, maybeHitId) (bots, hitIds) ->
-                (updatedBot :: bots
-                , case maybeHitId of
-                    Just hitId -> hitId :: hitIds
-                    Nothing -> hitIds
-                )
+            (\(updatedBot, hitIds) (bots, allHitIds) ->
+                (updatedBot :: bots, hitIds ++ allHitIds)
             )
             ([], [])
 
