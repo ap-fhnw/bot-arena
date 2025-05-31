@@ -45,10 +45,10 @@ type TurnDir
 
 -- Instruktionen, die der Parser aus der DSL erzeugt
 type Instr
-    = Move Int              -- Felder vorwärts
-    | Turn TurnDir          -- Grad (+ = rechts)
-    | Scan                  -- Feld-of-View -> Event
-    | Fire Int Int          -- Rel. Koord.
+    = Move Int           -- Felder vorwärts
+    | Turn TurnDir       -- Grad (+ = rechts)
+    | Scan               -- Feld-of-View -> Event
+    | Fire Int           -- Rel. Distance to enemy (0 = self -> commit suicide 😳)
     | NoOp
     | Repeat Int Instr
     | IfThenElse Cond Instr Instr

@@ -194,12 +194,10 @@ parseInstr = oneOf
         , map2 Repeat
             (ignoreLeft (token "REPEAT") intToken)
             (lazyInstr (\_ -> parseInstr))
-        , map2 Fire
-            (ignoreLeft (token "FIRE") intToken)
-            intToken
 
         , map Move (ignoreLeft (token "MOVE") intToken)
         , map Turn (ignoreLeft (token "TURN") parseTurnDir)
+        , map Fire (ignoreLeft (token "FIRE") intToken)
         , ignoreLeft (token "SCAN") (succeed Scan)
         , ignoreLeft (token "NOTHING") (succeed NoOp)
         ]

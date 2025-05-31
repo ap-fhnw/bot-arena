@@ -32,6 +32,7 @@ liveBotAt : BotEntity -> Model.Coord -> Bool
 liveBotAt bot coord =
     bot.alive && bot.pos == coord
 
+-- Not really used now, but could be useful later - with other weapons or other enhancements
 scanEnvironment : World -> BotEntity -> List (Model.Coord, Obj)
 scanEnvironment w bot =
     -- Scans the environment like a radar with max range (hard coded at the moment)
@@ -113,12 +114,16 @@ turnBot b n =
         AROUND   -> modBy 360 (b.dirDeg + 180)
 
 
-fireAt : BotEntity -> Model.Coord -> Maybe Model.Coord
-fireAt b (x, y) =
+fireAt : BotEntity -> Int -> Maybe Model.Coord
+fireAt b n =
     if not b.alive then
         Nothing
     else
-        Just (x, y)
+    let
+        ((dx, dy), (x, y)) = getBotDirAndPos b
+        targetPos = (x + dx * n, y + dy * n)
+    in
+        Just targetPos
 
 evalCond : World -> BotEntity -> Cond -> Bool
 evalCond w b cond =
@@ -126,8 +131,9 @@ evalCond w b cond =
         EnemyAhead ->
             -- Check if there is an enemy bot in front of the bot
             let
+                viewLength = 4
                 ((dx, dy), (x, y)) = getBotDirAndPos b
-                targetPos = (x + dx, y + dy)
+                targetPos = (x + dx * viewLength, y + dy * viewLength)
             in
             List.any (\bot -> liveBotAt bot targetPos && bot.id /= b.id) w.bots
 
@@ -160,7 +166,7 @@ executeInstr w b instr = case instr of
     -- Scan environment, radarlike with radius
     Scan   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
     -- Fire at coordinate --> see run world function
-    Fire x y ->  { b | pc = b.pc + 1, fireAt = fireAt b (x, y) }
+    Fire n ->  { b | pc = b.pc + 1, fireAt = fireAt b n }
     -- If-then-else instruction
     IfThenElse cond ifTrue ifFalse ->
         if evalCond w b cond then
@@ -178,7 +184,7 @@ executeInstr w b instr = case instr of
                     Move n -> { b | pos = moveBot w b n }
                     Turn n -> { b | dirDeg = turnBot b n }
                     Scan -> { b | viewEnv = scanEnvironment w b }
-                    Fire _ _ -> { b | pc = b.pc + 1 } -- Fire does not change the bot state
+                    Fire _ -> { b | pc = b.pc + 1 } -- Fire does not change the bot state
                     _ -> { b | pc = b.pc + 1 } -- No operation, just move to next instruction
 
                 -- Create a new Instruction list with the body repeated
