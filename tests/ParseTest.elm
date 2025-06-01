@@ -44,8 +44,8 @@ tests = describe "parseBotScript"
 
         , test "FIRE" <|
             \_ ->
-                parse "FIRE 1"
-                    |> Expect.equal (Just <| Fire 1)
+                parse "FIRE"
+                    |> Expect.equal (Just <| Fire)
 
         , test "NOOP / NOTHING" <|
             \_ ->
@@ -59,11 +59,11 @@ tests = describe "parseBotScript"
 
         , test "IF … THEN … ELSE …" <|
             \_ ->
-                parse "IF ENEMYAHEAD THEN FIRE 1 ELSE MOVE 2"
+                parse "IF ENEMYAHEAD THEN FIRE ELSE MOVE 2"
                     |> Expect.equal
                         (Just <|
                             IfThenElse EnemyAhead
-                                (Fire 1)
+                                (Fire)
                                 (Move 2)
                         )
 

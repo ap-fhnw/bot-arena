@@ -190,7 +190,7 @@ parseInstr = oneOf
 
         , map Move (ignoreLeft (token "MOVE") intToken)
         , map Turn (ignoreLeft (token "TURN") parseTurnDir)
-        , map Fire (ignoreLeft (token "FIRE") intToken)
+        , ignoreLeft (token "FIRE") (succeed Fire)
         , ignoreLeft (token "SCAN") (succeed Scan)
         , ignoreLeft (token "NOTHING") (succeed NoOp)
         ]

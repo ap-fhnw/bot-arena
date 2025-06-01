@@ -48,7 +48,7 @@ type Instr
     = Move Int           -- Felder vorwärts
     | Turn TurnDir       -- Grad (+ = rechts)
     | Scan               -- Feld-of-View -> Event
-    | Fire Int           -- Rel. Distance to enemy (0 = self -> commit suicide 😳)
+    | Fire               -- Fire in direction of dirDeg
     | NoOp
     | Repeat Int Instr
     | IfThenElse Cond Instr Instr

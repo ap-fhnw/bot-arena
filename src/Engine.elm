@@ -118,16 +118,17 @@ turnBot b n =
         LEFT     -> modBy 360 (b.dirDeg - 90)
         AROUND   -> modBy 360 (b.dirDeg + 180)
 
-fire : World -> BotEntity -> Int -> List Model.Coord
-fire w b n =
+fire : World -> BotEntity -> List Model.Coord
+fire w b =
     if not b.alive then
         [] -- Can't Shoot at anything, I'm dead
     else
     let
+        maxRange = 5 
         ((dx, dy), (x, y)) = getBotDirAndPos b
         bulletPath : Int -> Int -> Int -> List Model.Coord -> List Model.Coord
         bulletPath currentDist currentX currentY acc = 
-            if currentDist > n then
+            if currentDist > maxRange then
                 acc
             else
                 let
@@ -220,7 +221,7 @@ executeInstr w b instr = case instr of
     -- Scan environment, radarlike with radius
     Scan   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
     -- Fire at coordinate --> see run world function
-    Fire n ->  { b | pc = b.pc + 1, fireAt = fire w b n }
+    Fire ->  { b | pc = b.pc + 1, fireAt = fire w b }
     -- If-then-else instruction
     IfThenElse cond ifTrue ifFalse ->
         if evalCond w b cond then
@@ -238,7 +239,7 @@ executeInstr w b instr = case instr of
                     Move n -> { b | pos = moveBot w b n }
                     Turn n -> { b | dirDeg = turnBot b n }
                     Scan -> { b | viewEnv = scanEnvironment w b }
-                    Fire _ -> { b | pc = b.pc + 1 } -- Fire does not change the bot state
+                    Fire -> { b | pc = b.pc + 1 } -- Fire does not change the bot state
                     _ -> { b | pc = b.pc + 1 } -- No operation, just move to next instruction
 
                 -- Create a new Instruction list with the body repeated
