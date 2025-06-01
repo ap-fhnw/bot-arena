@@ -90,5 +90,6 @@ type alias World =
     { tick        : Tick
     , arena       : ArenaConfig
     , bots        : List BotEntity
+    , error       : Maybe String
     , queue       : List Int      -- FIFO für interpretierte Instruktionen
     }

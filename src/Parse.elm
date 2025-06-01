@@ -1,4 +1,4 @@
-module Parse exposing (parseBotScript)
+module Parse exposing (parseBotScript, parseBotScriptSave)
 
 import Model exposing (Instr(..), Cond(..))
 
@@ -206,3 +206,6 @@ parseBotScript input =
     parseScript (String.toUpper input)
         |> Result.map Tuple.first
         |> Result.mapError Tuple.second
+
+parseBotScriptSave : String -> List Instr
+parseBotScriptSave = parseBotScript >> Result.withDefault []

@@ -127,7 +127,7 @@ editor model style =
                 ]]
                 [ showPlayerBot model.world
                 , hr [css [ margin (px 0), width (pct 110), transform (translateX (pct -5))]] []
-                , text (showDebug model)]]
+                , text (Maybe.withDefault (showDebug model) <| model.world.error) ]]
                 else []) ++
             [ textarea
             [ onInput UpdateScript
@@ -268,7 +268,7 @@ debugOutput : StyledElement msg
 debugOutput = styled div
     [ padding (Css.em 1)
     , backgroundColor theme.debugBg
-    , whiteSpace Css.pre, fontFamily monospace
+    , whiteSpace preWrap, fontFamily monospace
     , fontSize (Css.em 1.5)
     , outsetBorder
     ]
