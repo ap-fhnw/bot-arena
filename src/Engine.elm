@@ -239,8 +239,7 @@ executeInstr w b instr = case instr of
                     Move n -> { b | pos = moveBot w b n }
                     Turn n -> { b | dirDeg = turnBot b n }
                     Scan -> { b | viewEnv = scanEnvironment w b }
-                    Fire -> { b | pc = b.pc + 1 } -- Fire does not change the bot state
-                    Fire -> { b | pc = b.pc + 1 } -- Fire does not change the bot state
+                    Fire -> { b | pc = b.pc, fireAt = fire w b } -- Fire does not change the bot state
                     _ -> { b | pc = b.pc + 1 } -- No operation, just move to next instruction
 
                 -- Create a new Instruction list with the body repeated
@@ -337,7 +336,10 @@ tick world =
             updatedBots
                 |> List.map (\bot ->
                     if List.member bot.id hitIds then
-                        { bot | alive = False, hp = 0 } -- Bot is hit and dies
+                        let
+                            newHp = max 0 (bot.hp - 2)
+                            in
+                            { bot | hp = newHp, alive = newHp > 0 } -- Lower hp
                     else
                         bot
                 )
