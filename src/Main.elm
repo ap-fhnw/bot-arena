@@ -100,10 +100,10 @@ beginnerWorld m = let (script, err) = unpackScript m in
         , createBot 2 "Bar" (4, 6) -90 (parseBotScriptSave """
             MOVE 1
             TURN right
-            FIRE 0
+            FIRE
             MOVE 1
             TURN right
-            FIRE 0
+            FIRE
             """)
         ]
     , arena =
@@ -124,11 +124,11 @@ prisonWorld m = let (script, err) = unpackScript m in
         [ createBot 1 "Foo" (3, 2) 180 script
         , createBot 2 "Bar" (4, 5) 0 (parseBotScriptSave """
             MOVE 1
-            TURN LEFT
-            FIRE 3
+            TURN right
+            FIRE
             MOVE 1
-            TURN RIGHT
-            FIRE 1
+            TURN right
+            FIRE
             """)
         ]
     , arena =
