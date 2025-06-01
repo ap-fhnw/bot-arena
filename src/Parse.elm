@@ -49,23 +49,13 @@ isSpace c = c == ' ' || c == '\n'
 spaces : Parser ()
 spaces = takeWhile isSpace |> map (\_ -> ())
 
-signedDigits : Bool -> Parser Int
-signedDigits isNeg = takeWhile Char.isDigit |> andThen
-    (\s -> 
-        case String.toInt (if isNeg then "-" ++ s else s) of
-            Just n -> succeed n
-            Nothing -> fail "invalid integer literal"
-    )
 
 intToken : Parser Int
-intToken = 
-    let 
-        number = oneOf
-            [ char '-' |> andThen (\_ -> signedDigits True)
-            , signedDigits False
-            ]
-    in
-        ignoreRight number spaces
+intToken = takeWhile Char.isDigit |> andThen
+    (\s -> case String.toInt s of
+        Just n -> succeed n
+        Nothing -> fail "invalid integer literal"
+    )
 
 token : String -> Parser String
 token str = ignoreLeft spaces (ignoreRight (string str) spaces)
