@@ -153,13 +153,6 @@ lazyInstr thunk =
     ignoreLeft spaces (lazy thunk) -- removes spaces before
 
 -- Parser
-turnArg : Parser Int
-turnArg = oneOf
-    [ map (\_ -> -90)  (token "LEFT")
-    , map (\_ ->  90)  (token "RIGHT")
-    , map (\_ -> 180)  (token "BEHIND")
-    , intToken
-    ]
 
 parseCond : Parser Cond
 parseCond = oneOf

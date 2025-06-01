@@ -123,10 +123,10 @@ prisonWorld m = let (script, err) = unpackScript m in
         [ createBot 1 "Foo" (3, 2) 180 script
         , createBot 2 "Bar" (4, 5) 0 (parseBotScriptSave """
             MOVE 1
-            TURN right
-            FIRE 1
+            TURN LEFT
+            FIRE 3
             MOVE 1
-            TURN right
+            TURN RIGHT
             FIRE 1
             """)
         ]
