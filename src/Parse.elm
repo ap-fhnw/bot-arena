@@ -49,13 +49,16 @@ isSpace c = c == ' ' || c == '\n'
 spaces : Parser ()
 spaces = takeWhile isSpace |> map (\_ -> ())
 
-
 intToken : Parser Int
-intToken = takeWhile Char.isDigit |> andThen
-    (\s -> case String.toInt s of
-        Just n -> succeed n
-        Nothing -> fail "invalid integer literal"
-    )
+intToken =
+    let
+        digits = takeWhile Char.isDigit |> andThen 
+            (\s -> case String.toInt s of
+                Just n  -> succeed n
+                Nothing -> fail "invalid integer literal"
+            )
+    in
+        ignoreRight digits spaces
 
 token : String -> Parser String
 token str = ignoreLeft spaces (ignoreRight (string str) spaces)
@@ -180,7 +183,7 @@ parseInstr = oneOf
 
         , map Move (ignoreLeft (token "MOVE") intToken)
         , map Turn (ignoreLeft (token "TURN") parseTurnDir)
-        , map Fire (ignoreLeft (token "FIRE") intToken)
+        , ignoreLeft (token "FIRE") (succeed Fire)
         , ignoreLeft (token "SCAN") (succeed Scan)
         , ignoreLeft (token "NOTHING") (succeed NoOp)
         ]

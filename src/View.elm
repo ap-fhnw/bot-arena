@@ -215,7 +215,7 @@ showInstruction i = case i of
     Move n -> "MOVE " ++ toString n
     Turn n -> "TURN " ++ toString n 
     Scan -> "SCAN"
-    Fire n -> "FIRE " ++ toString n
+    Fire -> "FIRE"
     Repeat n instr -> "REPEAT " ++ toString n ++ " " ++ showInstruction instr
     IfThenElse cond i1 i2 -> "IF (" ++ showCond cond ++ ") ? " ++ showInstruction i1 ++ " : " ++ showInstruction i2
     While cond instr -> "WHILE (" ++ showCond cond ++ ") " ++ showInstruction instr
