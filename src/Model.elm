@@ -68,6 +68,7 @@ type alias BotEntity =
     , pos        : Coord
     , dirDeg     : Int               -- 0 = Norden
     , hp         : Int
+    , range      : Int
     , program    : List Instr       -- Ergebnis des Parsers
     , pc         : Int              -- Program-Counter
     , alive      : Bool

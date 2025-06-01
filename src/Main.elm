@@ -17,6 +17,7 @@ createBot id name pos dir pgr =
     , pos = pos
     , dirDeg = dir
     , hp = 10
+    , range = 5
     , program = pgr
     , pc = 0
     , alive = True
