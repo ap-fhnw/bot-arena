@@ -26,15 +26,15 @@ tests = describe "parseBotScript"
                 parse "TURN LEFT"
                     |> Expect.equal (Just <| Turn LEFT)
 
-        ,describe "TURN LEFT/RIGHT/BEHIND"
+        ,describe "TURN LEFT/RIGHT/AROUND"
             [ test "LEFT" <|
-                \_ -> parse "TURN LEFT"   |> Expect.equal (Just <| Turn -90)
+                \_ -> parse "TURN LEFT"   |> Expect.equal (Just <| Turn LEFT)
 
             , test "RIGHT" <|
-                \_ -> parse "TURN RIGHT"  |> Expect.equal (Just <| Turn 90)
+                \_ -> parse "TURN RIGHT"  |> Expect.equal (Just <| Turn RIGHT)
 
-            , test "BEHIND" <|
-                \_ -> parse "TURN BEHIND" |> Expect.equal (Just <| Turn 180)
+            , test "AROUND" <|
+                \_ -> parse "TURN AROUND" |> Expect.equal (Just <| Turn AROUND)
             ]
 
         , test "SCAN" <|
@@ -101,9 +101,11 @@ tests = describe "parseBotScript"
                     IF WALLAHEAD
                         THEN TURN RIGHT
                     ELSE MOVE 1
-                """
-                |> Expect.equal
-                    [ Repeat 10 (IfThenElse WallAhead (Turn RIGHT) (Move 1)) ]
+                """ of
+                    Ok instrs ->
+                        Expect.equal instrs [ Repeat 10 (IfThenElse WallAhead (Turn RIGHT) (Move 1)) ]
+                    Err msg ->
+                        Expect.fail ("Parser error: " ++ msg)
+        ]
 
-                ]
     ]
