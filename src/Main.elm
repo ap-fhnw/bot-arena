@@ -1,9 +1,9 @@
-module Main exposing (main)
+module Main exposing (main, unpackScript)
 
 import Browser
 
 import Model exposing (..)
-import Parse exposing (parseBotScript)
+import Parse exposing (parseBotScript, parseBotScriptSave)
 import Engine exposing (tick)
 import View exposing (renderView, subscriptions)
 import Task
@@ -37,6 +37,7 @@ init _ = (
     , world =
         { tick = 0
         , queue = []
+        , error = Nothing
         , bots = 
             [ createBot 1 "Foo" (4, 2) 90 []
             , createBot 2 "Bar" (4, 6) -90 []
@@ -76,13 +77,26 @@ update msg model = case msg of
     ToggleProcess b -> ({ model | showParseResult = b }, Cmd.none)
     SetArena option -> ({ model | arena = option }, Task.perform (\_ -> StoreScript) (Task.succeed 0))
 
+unpackScript : Model -> (List Instr, Maybe String)
+unpackScript m =
+    let parsedScript = parseBotScript m.script
+        previousScript = List.head m.world.bots
+            |> Maybe.map .program
+            |> Maybe.withDefault []
+        script = parsedScript |> Result.withDefault previousScript
+        err = case parsedScript of
+            Err(msg) -> Just msg
+            _ -> Nothing
+    in (script, err)
+
 beginnerWorld : Model -> World
-beginnerWorld m =
+beginnerWorld m = let (script, err) = unpackScript m in
     { tick = 0
+    , error = err
     , queue = []
     , bots = 
-        [ createBot 1 "Foo" (4, 2) 90 (parseBotScript m.script)
-        , createBot 2 "Bar" (4, 6) -90 (parseBotScript """
+        [ createBot 1 "Foo" (4, 2) 90 script
+        , createBot 2 "Bar" (4, 6) -90 (parseBotScriptSave """
             MOVE 1
             TURN 90
             FIRE 0 0
@@ -101,15 +115,16 @@ beginnerWorld m =
     }
 
 prisonWorld : Model -> World
-prisonWorld m =
+prisonWorld m = let (script, err) = unpackScript m in
     { tick = 0
     , queue = []
+    , error = err
     , bots = 
-        [ createBot 1 "Foo" (3, 2) 180 (parseBotScript m.script)
-        , createBot 2 "Bar" (4, 5) 0 (parseBotScript """
+        [ createBot 1 "Foo" (3, 2) 180 script
+        , createBot 2 "Bar" (4, 5) 0 (parseBotScriptSave """
             MOVE 1
             TURN 90
-            FIRE 0 0
+            FIRE 3 2
             MOVE 1
             TURN 90
             FIRE 0 1

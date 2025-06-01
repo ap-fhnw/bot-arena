@@ -1,26 +1,34 @@
-module Parse exposing (parseBotScript)
+module Parse exposing (parseBotScript, parseBotScriptSave)
 
 import Model exposing (Instr(..), Cond(..))
 
-type alias Parser a = String -> Maybe (a, String)
+type alias Parser a = String -> Result (Int, String) ( a, String )
 
 -- Similiar to pure from Haskell Applicative
 succeed : a -> Parser a
-succeed a = \input -> Just (a, input)
+succeed a = \input -> Ok (a, input)
 
 -- Similiar to empty from Haskell Alternative
-fail : Parser a
-fail = \_ -> Nothing
+fail : String -> Parser a
+fail msg = \_ -> Err ( 0, msg )
+
+-- Get consumed parser length
+consumed : String -> String -> Int
+consumed before after = String.length before - String.length after
 
 -- String Parser helper functions
-sat : (Char -> Bool) -> Parser Char
-sat pred = \input -> case String.uncons input of -- Split a non-empty string into its head and tail
+satDesc : (Char -> Bool) -> String -> Parser Char
+satDesc pred desc = \input -> case String.uncons input of -- Split a non-empty string into its head and tail
     Just (c, rest) ->
-        if pred c then
-            Just (c, rest)
+        if pred c then 
+            Ok (c, rest)
         else
-            Nothing
-    Nothing -> Nothing
+            Err (0, "Expected " ++ desc ++ ", but found '" ++ String.fromChar c ++ "'")
+    Nothing ->
+        Err (0, "Expected " ++ desc ++ ", but got end of input")
+
+sat : (Char -> Bool) -> Parser Char
+sat pred = satDesc pred "character matching predicate"
 
 takeWhile : (Char -> Bool) -> Parser String
 takeWhile pred =
@@ -33,7 +41,7 @@ takeWhile pred =
         step []
 
 char : Char -> Parser Char
-char ch = sat (\c -> c == ch)
+char ch = satDesc (\c -> c == ch) ("character '" ++ String.fromChar ch ++ "'")
 
 isSpace : Char -> Bool
 isSpace c = c == ' ' || c == '\n'
@@ -46,7 +54,7 @@ signedDigits isNeg = takeWhile Char.isDigit |> andThen
     (\s -> 
         case String.toInt (if isNeg then "-" ++ s else s) of
             Just n -> succeed n
-            Nothing -> fail
+            Nothing -> fail "invalid integer literal"
     )
 
 intToken : Parser Int
@@ -65,29 +73,28 @@ token str = ignoreLeft spaces (ignoreRight (string str) spaces)
 string : String -> Parser String
 string target =
     let
-        step : List Char -> Parser ()
+        step : List Char -> Parser String
         step chars = case chars of
-            [] -> succeed ()
+            [] -> succeed target
             c :: cs -> char c |> andThen (\_ -> step cs)
     in
-        map (\_ -> target) (step (String.toList target))
+        step (String.toList target)
 
 map : (a -> b) -> Parser a -> Parser b
 map f p = \input -> case p input of
-    Just (a, rest) -> Just (f a, rest)
-    Nothing -> Nothing
+    Ok (a, rest) -> Ok (f a, rest)
+    Err e -> Err e
 
 apply : Parser (a -> b) -> Parser a -> Parser b
 apply pf pa = \input -> case pf input of
-    Just (f, rest1) -> case pa rest1 of
-        Just (a, rest2) -> Just (f a, rest2)
-        Nothing -> Nothing
-    Nothing -> Nothing
+    Ok (f, rest1) -> case pa rest1 of
+        Ok (a, rest2) -> Ok (f a, rest2)
+        Err (c2, msg) -> Err ( consumed input rest1 + c2, msg )
+    Err e -> Err e
 
 -- Sequences
 map2 : (a -> b -> c) -> Parser a -> Parser b -> Parser c
-map2 f pa pb =
-    apply (map f pa) pb
+map2 f pa pb = apply (map f pa) pb
 
 ignoreLeft : Parser a -> Parser b -> Parser b
 ignoreLeft p1 p2 = map2 (\_ b -> b) p1 p2
@@ -95,13 +102,28 @@ ignoreLeft p1 p2 = map2 (\_ b -> b) p1 p2
 ignoreRight : Parser a -> Parser b -> Parser a
 ignoreRight p1 p2 = map2 (\a _ -> a) p1 p2
 
-oneOf : List (Parser a) -> Parser a
-oneOf parsers = \input -> case parsers of 
-    p :: ps -> case p input of
-        Just result -> Just result
-        Nothing -> (oneOf ps) input
+oneOf : List ( Parser a ) -> Parser a
+oneOf parsers = \input ->
+    let
+        try ps lastErr = case ps of
+            [] -> Err lastErr
+            p :: rest -> case p input of
+                Ok res -> Ok res
+                Err (cons, msg) ->
+                    if cons == 0 then -- nothing consumed
+                        let
+                            -- syntax error ignore
+                            relevant = not (String.startsWith "Expected character" msg)
+                        in
+                            try rest (if relevant then (cons, msg) else lastErr)
+                    else -- something consumed
+                        Err (cons, msg)
+    in
+        try parsers (0, "No alternatives matched")
 
-    [] -> Nothing
+
+some : Parser a -> Parser (List a)
+some p = map2 (::) p (many p)
 
 many : Parser a -> Parser (List a)
 many p = oneOf
@@ -111,15 +133,17 @@ many p = oneOf
 
 andThen : (a -> Parser b) -> Parser a -> Parser b
 andThen f p = \input -> case p input of
-    Just (a, rest) -> f a rest
-    Nothing -> Nothing
+    Ok (a, rest) -> case f a rest of
+            Ok res -> Ok res
+            Err (c2, msg) -> Err (consumed input rest + c2, msg)
+    Err e -> Err e
 
 endOfInput : Parser ()
 endOfInput = \input ->
     if String.isEmpty input then
-        Just ((), "")
+        Ok ((), "")
     else
-        Nothing
+        Err (0, "Expected end of input")
 
 lazy : (() -> Parser a) -> Parser a
 lazy thunk = \input -> thunk () input
@@ -129,12 +153,21 @@ lazyInstr thunk =
     ignoreLeft spaces (lazy thunk) -- removes spaces before
 
 -- Parser
+turnArg : Parser Int
+turnArg = oneOf
+    [ map (\_ -> -90)  (token "LEFT")
+    , map (\_ ->  90)  (token "RIGHT")
+    , map (\_ -> 180)  (token "BEHIND")
+    , intToken
+    ]
+
 parseCond : Parser Cond
 parseCond = oneOf
         [ map Not (ignoreLeft (token "NOT") (lazy (\_ -> parseCond)))
         , map (\_ -> EnemyAhead) (token "ENEMYAHEAD")
         , map (\_ -> WallAhead)  (token "WALLAHEAD")
         , map (\_ -> LowHp)      (token "LOWHP")
+        , map (\_ -> Always)     (token "TRUE")
         ]
 
 parseInstr : Parser Instr
@@ -158,18 +191,21 @@ parseInstr = oneOf
             intToken
 
         , map Move (ignoreLeft (token "MOVE") intToken)
-        , map Turn (ignoreLeft (token "TURN") intToken)
+        , map Turn (ignoreLeft (token "TURN") turnArg)
         , ignoreLeft (token "SCAN") (succeed Scan)
         , ignoreLeft (token "NOTHING") (succeed NoOp)
         ]
 
 -- Parse complete string
 parseScript : Parser (List Instr)
-parseScript = map2 (\instrs _ -> instrs) (many (parseInstr)) (ignoreLeft spaces endOfInput) 
+parseScript = map2 (\instrs _ -> instrs) (some (ignoreLeft spaces parseInstr)) (ignoreLeft spaces endOfInput) 
 
 -- Top level Parser
-parseBotScript : String -> List Instr
+parseBotScript : String -> Result String (List Instr)
 parseBotScript input =
-    case parseScript (String.toUpper input) of
-        Just (instrs, "") -> instrs
-        _ -> []
+    parseScript (String.toUpper input)
+        |> Result.map Tuple.first
+        |> Result.mapError Tuple.second
+
+parseBotScriptSave : String -> List Instr
+parseBotScriptSave = parseBotScript >> Result.withDefault []

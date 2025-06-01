@@ -7,9 +7,9 @@ import Model exposing (Instr(..), Cond(..))
 
 -- Helper function
 parse : String -> Maybe Instr
-parse = \line -> case parseBotScript line of
-            [ i ] -> Just i
-            _     -> Nothing
+parse line = case parseBotScript line of
+    Ok [ i ] -> Just i
+    _        -> Nothing
 
 
 -- The Parser test
@@ -25,6 +25,17 @@ tests = describe "parseBotScript"
             \_ ->
                 parse "TURN -90"
                     |> Expect.equal (Just <| Turn -90)
+
+        ,describe "TURN LEFT/RIGHT/BEHIND"
+            [ test "LEFT" <|
+                \_ -> parse "TURN LEFT"   |> Expect.equal (Just <| Turn -90)
+
+            , test "RIGHT" <|
+                \_ -> parse "TURN RIGHT"  |> Expect.equal (Just <| Turn 90)
+
+            , test "BEHIND" <|
+                \_ -> parse "TURN BEHIND" |> Expect.equal (Just <| Turn 180)
+            ]
 
         , test "SCAN" <|
             \_ ->
@@ -61,6 +72,11 @@ tests = describe "parseBotScript"
                 parse "WHILE LOWHP DO MOVE 1"
                     |> Expect.equal
                         (Just <| While LowHp (Move 1))
+
+        , test "WHILE TRUE DO …" <|
+            \_ ->
+                parse "WHILE TRUE DO MOVE 1"
+                    |> Expect.equal (Just <| While Always (Move 1))
         ]
     , describe "Conditions (inkl. NOT …)"
         [ test "ENEMYAHEAD" <|
@@ -80,14 +96,15 @@ tests = describe "parseBotScript"
                         )
         , test "multiline REPEAT + IF Block" <|
             \_ ->
-                parseBotScript """
+                case parseBotScript """
                 REPEAT 10
                     IF WALLAHEAD
                         THEN TURN 90
                     ELSE MOVE 1
-                """
-                |> Expect.equal
-                    [ Repeat 10 (IfThenElse WallAhead (Turn 90) (Move 1)) ]
-
-                ]
+                """ of
+                    Ok instrs ->
+                        Expect.equal instrs [ Repeat 10 (IfThenElse WallAhead (Turn 90) (Move 1)) ]
+                    Err msg ->
+                        Expect.fail ("Parser error: " ++ msg)
+        ]
     ]

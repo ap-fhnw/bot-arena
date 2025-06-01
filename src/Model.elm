@@ -53,6 +53,7 @@ type Cond
     = EnemyAhead
     | WallAhead
     | LowHp
+    | Always
     | Not Cond
 
 -- Ein einzelner Bot im Spielzustand
@@ -89,5 +90,6 @@ type alias World =
     { tick        : Tick
     , arena       : ArenaConfig
     , bots        : List BotEntity
+    , error       : Maybe String
     , queue       : List Int      -- FIFO für interpretierte Instruktionen
     }
