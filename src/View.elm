@@ -134,7 +134,7 @@ editor model style =
             , Html.Styled.Events.preventDefaultOn "beforeinput"
                     ((D.field "inputType" D.string) |> D.andThen (\i -> D.succeed (NOOP, model.modifier && i == "insertLineBreak")))
             , value model.script
-            , placeholder "MOVE 1\nTURN 90\nFIRE 1 0\nREPEAT 3 MOVE 1\nIF ENEMYAHEAD THEN FIRE 1 0 ELSE TURN -90\nWHILE NOT LOWHP DO SCAN\n..."
+            , placeholder "MOVE 1\nTURN RIGHT\nFIRE 1\nREPEAT 3 MOVE 1\nIF ENEMYAHEAD THEN FIRE 1 ELSE TURN LEFT\nWHILE NOT LOWHP DO SCAN\n..."
             , spellcheck False
             , css
                 [ resize none
@@ -213,9 +213,9 @@ cell world coord = case (getObj world.arena.objects coord) of
 showInstruction : Instr -> String
 showInstruction i = case i of
     Move n -> "MOVE " ++ toString n
-    Turn n -> "TURN " ++ toString n ++ "°"
+    Turn n -> "TURN " ++ toString n 
     Scan -> "SCAN"
-    Fire x y -> "FIRE " ++ toString x ++ " " ++ toString y
+    Fire n -> "FIRE " ++ toString n
     Repeat n instr -> "REPEAT " ++ toString n ++ " " ++ showInstruction instr
     IfThenElse cond i1 i2 -> "IF (" ++ showCond cond ++ ") ? " ++ showInstruction i1 ++ " : " ++ showInstruction i2
     While cond instr -> "WHILE (" ++ showCond cond ++ ") " ++ showInstruction instr

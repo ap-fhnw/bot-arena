@@ -153,13 +153,6 @@ lazyInstr thunk =
     ignoreLeft spaces (lazy thunk) -- removes spaces before
 
 -- Parser
-turnArg : Parser Int
-turnArg = oneOf
-    [ map (\_ -> -90)  (token "LEFT")
-    , map (\_ ->  90)  (token "RIGHT")
-    , map (\_ -> 180)  (token "BEHIND")
-    , intToken
-    ]
 
 parseCond : Parser Cond
 parseCond = oneOf
@@ -169,6 +162,14 @@ parseCond = oneOf
         , map (\_ -> LowHp)      (token "LOWHP")
         , map (\_ -> Always)     (token "TRUE")
         ]
+
+parseTurnDir : Parser Model.TurnDir
+parseTurnDir = oneOf
+    [ map (\_ -> Model.RIGHT) (token "RIGHT")
+    , map (\_ -> Model.LEFT)  (token "LEFT")
+    , map (\_ -> Model.AROUND)  (token "AROUND")
+    , map (\_ -> Model.STRAIGHT)  (token "STRAIGHT")
+    ]
 
 parseInstr : Parser Instr
 parseInstr = oneOf
@@ -186,12 +187,10 @@ parseInstr = oneOf
         , map2 Repeat
             (ignoreLeft (token "REPEAT") intToken)
             (lazyInstr (\_ -> parseInstr))
-        , map2 Fire
-            (ignoreLeft (token "FIRE") intToken)
-            intToken
 
         , map Move (ignoreLeft (token "MOVE") intToken)
-        , map Turn (ignoreLeft (token "TURN") turnArg)
+        , map Turn (ignoreLeft (token "TURN") parseTurnDir)
+        , map Fire (ignoreLeft (token "FIRE") intToken)
         , ignoreLeft (token "SCAN") (succeed Scan)
         , ignoreLeft (token "NOTHING") (succeed NoOp)
         ]

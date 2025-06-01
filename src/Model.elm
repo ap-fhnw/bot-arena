@@ -37,13 +37,18 @@ type alias KeyEvent =
 type alias BotId     = Int
 type alias Tick      = Int
 type alias Coord     = (Int, Int)
+type TurnDir
+    = RIGHT     -- +90 Grad
+    | LEFT      -- -90 Grad
+    | AROUND    -- 180 Grad (Umdrehen)
+    | STRAIGHT  -- Geradeaus (0 Grad, nicht drehen)
 
 -- Instruktionen, die der Parser aus der DSL erzeugt
 type Instr
-    = Move Int              -- Felder vorwärts
-    | Turn Int              -- Grad (+ = rechts)
-    | Scan                  -- Feld-of-View -> Event
-    | Fire Int Int          -- Rel. Koord.
+    = Move Int           -- Felder vorwärts
+    | Turn TurnDir       -- Grad (+ = rechts)
+    | Scan               -- Feld-of-View -> Event
+    | Fire Int           -- Rel. Distance to enemy (0 = self -> commit suicide 😳)
     | NoOp
     | Repeat Int Instr
     | IfThenElse Cond Instr Instr
@@ -66,7 +71,7 @@ type alias BotEntity =
     , program    : List Instr       -- Ergebnis des Parsers
     , pc         : Int              -- Program-Counter
     , alive      : Bool
-    , fireAt     : Maybe Coord  
+    , fireAt     : List Coord
     , viewEnv    : List (Coord, Obj)
     }
 

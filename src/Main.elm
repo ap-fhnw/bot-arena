@@ -21,7 +21,7 @@ createBot id name pos dir pgr =
     , pc = 0
     , alive = True
     , viewEnv = [] 
-    , fireAt = Nothing
+    , fireAt = []
     }
 
 init : () -> (Model, Cmd Msg)
@@ -98,11 +98,11 @@ beginnerWorld m = let (script, err) = unpackScript m in
         [ createBot 1 "Foo" (4, 2) 90 script
         , createBot 2 "Bar" (4, 6) -90 (parseBotScriptSave """
             MOVE 1
-            TURN 90
-            FIRE 0 0
+            TURN right
+            FIRE 0
             MOVE 1
-            TURN 90
-            FIRE 0 1
+            TURN right
+            FIRE 0
             """)
         ]
     , arena =
@@ -123,11 +123,11 @@ prisonWorld m = let (script, err) = unpackScript m in
         [ createBot 1 "Foo" (3, 2) 180 script
         , createBot 2 "Bar" (4, 5) 0 (parseBotScriptSave """
             MOVE 1
-            TURN 90
-            FIRE 3 2
+            TURN LEFT
+            FIRE 3
             MOVE 1
-            TURN 90
-            FIRE 0 1
+            TURN RIGHT
+            FIRE 1
             """)
         ]
     , arena =
