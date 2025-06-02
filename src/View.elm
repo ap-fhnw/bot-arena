@@ -219,6 +219,7 @@ showInstruction i = case i of
     Repeat n instr -> "REPEAT " ++ toString n ++ " " ++ showInstruction instr
     IfThenElse cond i1 i2 -> "IF (" ++ showCond cond ++ ") ? " ++ showInstruction i1 ++ " : " ++ showInstruction i2
     While cond instr -> "WHILE (" ++ showCond cond ++ ") " ++ showInstruction instr
+    Seq instrs -> "[ " ++ String.join "; " (List.map showInstruction instrs) ++ " ]"
     _ -> "?"
 
 showCond : Cond -> String

@@ -53,6 +53,7 @@ type Instr
     | Repeat Int Instr
     | IfThenElse Cond Instr Instr
     | While Cond Instr
+    | Seq (List Instr)
 
 type Cond
     = EnemyAhead
