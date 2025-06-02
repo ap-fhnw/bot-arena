@@ -2,8 +2,6 @@ module Styles exposing (..)
 
 import Debug exposing (toString)
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (css, spellcheck)
-import Html.Styled.Events exposing (onClick, onInput)
 import Css exposing (..)
 
 type alias StyledElement msg = List (Attribute msg) -> List (Html msg) -> Html msg
@@ -27,70 +25,56 @@ theme =
     , debugBg = rgba 120 120 120 0.3
     }
 
-renderWall : Html msg
-renderWall = div
-    [ css
-        [ backgroundColor theme.wall
-        , borderColor theme.wallBorder
-        , outsetBorder
-        , size (pct 100)
-        ]
-    ] []
-
-healthBarBase : Color -> Float -> Html msg
-healthBarBase col w = div
-    [ css [ position absolute
-    , border3 (px 1) groove transparent
-    , width (pct 100)
-    , height (px 3)
-    , top (px -2)
-    , boxSizing borderBox
-    , backgroundColor col
-    , width (pct w)
-    ]]
-    []
-
-pointer : Float -> Html msg
-pointer angle = div [ css
-    [ position absolute
-    , zIndex (int 0)
-    , border3 (px 16) groove transparent
-    , borderRightColor theme.directionPointer
-    , borderTopColor theme.directionPointer
-    , margin (px 0)
-    , transforms [rotateZ (deg (angle - 90)), translateX (px 16), scale 0.3, rotateZ (deg 45)]
-    , size (px 0)
-    , boxSizing borderBox
-    , left (calc (pct 50) minus (px 16))
-    ]] []
+section : StyledElement msg
+section = styled div
+    [ padding (Css.em 1)
+    , backgroundColor theme.debugBg
+    , whiteSpace preWrap, fontFamily monospace
+    , fontSize (Css.em 1.5)
+    , outsetBorder
+    ]
 
 actionRow : StyledElement msg
-actionRow = styled div [ grid, property "grid" "auto-flow / repeat(auto-fit, minmax(18ch, 1fr))" ]
+actionRow = styled div [ displayGrid, property "grid" "auto-flow / repeat(auto-fit, minmax(18ch, 1fr))" ]
 
-setting : StyledElement msg
-setting = styled label [ grid, property "grid-template-columns" "20ch auto", property "gap" "4px" ]
+displayGrid : Style
+displayGrid = batch [ property "display" "grid", property "gap" "12px", gridTemplateRows "1fr auto" ]
 
-grid : Style
-grid = Css.batch [ property "display" "grid", property "gap" "12px", property "grid-template-rows" "1fr auto" ]
+grid : StyledElement msg
+grid = styled div [ displayGrid ]
+
+gridR : String -> StyledElement msg
+gridR rows = styled div [ displayGrid, gridTemplateRows rows ]
+
+gridC : String -> StyledElement msg
+gridC cols = styled div [ displayGrid, gridTemplateCols cols ]
+
+gridRC : String -> String -> StyledElement msg
+gridRC rows cols = styled div [ displayGrid, gridTemplateRows rows, gridTemplateCols cols ]
+
+gap : Length c u -> Style
+gap l = property "gap" (toString l)
+
+gridTemplateRows : String -> Style
+gridTemplateRows rows = property "grid-template-rows" rows
+
+gridTemplateCols : String -> Style
+gridTemplateCols cols = property "grid-template-columns" cols
+
+gridArea : String -> Style
+gridArea area = property "grid-area" area
 
 size : LengthOrAuto c -> Style
-size c = Css.batch [ width c, height c ]
+size c = batch [ width c, height c ]
 
-bigBorder : Style
-bigBorder  = border3 (px 6) outset theme.gridLines
+largeBorder : Style
+largeBorder  = border3 (px 6) outset theme.gridLines
 
 insetBorder : Style
-insetBorder = Css.batch [ bigBorder, borderStyle inset ]
+insetBorder = batch [ largeBorder, borderStyle inset ]
 
 outsetBorder : Style
-outsetBorder = Css.batch [ bigBorder, borderStyle outset, boxSizing borderBox ]
+outsetBorder = batch [ largeBorder, borderStyle outset, boxSizing borderBox ]
 
-btn : List (Attribute msg) -> List (Html msg) -> Html msg
-btn = styled button
-    [ active [ insetBorder,  textShadow4 (px 2) (px 3) (px 3) (rgba 50 50 50 0.7)]
-    , outsetBorder
-    , textShadow3 (px 1) (px 1) (rgba 50 50 50 0.4)
-    , fontFamily monospace
-    , fontSize (Css.em 1.5)
-    , padding2 (px 6) (px 4)
-     ]
+scroll : Style
+scroll = batch [ height (pct 100) , overflow Css.scroll ]
