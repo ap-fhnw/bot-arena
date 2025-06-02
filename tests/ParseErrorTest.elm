@@ -30,4 +30,12 @@ tests = describe "Fehlermeldungen des Parsers"
         \_ ->
             run "BLABLA"
                 |> Expect.equal (Err "No alternatives matched")
+    , test "Ende vom Block fehlt" <|
+            \_ ->
+                run "["
+                    |> Expect.equal (Err "Expected character ']', but got end of input")
+    , test "Anfang vom Block fehlt" <|
+            \_ ->
+                run "]"
+                    |> Expect.equal (Err "No alternatives matched")
     ]
