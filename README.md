@@ -2,7 +2,7 @@
 
 A pure functional bot arena game with Game Queue and ACTIONS.
 
-![Screenshot](./Screenshot.jpg)
+![Screenshot](./Screenshot.png)
 
 This game is written in Elm, with three main parts:
 
@@ -55,7 +55,8 @@ You can also enable the options to automatically parse (auto-load) and run (auto
 
 \* Refer *Conditions* to see what conditions/queries you can use.
 
-> [!NOTE] `FIRE` shoots a bullet in the direction the bot is facing, and the bullet will travel until it hits a wall, an other bot or if it reaches the maxRange. One hit by a bullet will decrease the bot's HealthPoints by 2 (of max 10). Any change in this setting has to be done in the `Engine.elm` file at the moment.
+> [!NOTE]
+> `FIRE` shoots a bullet in the direction the bot is facing, and the bullet will travel until it hits a wall, an other bot or if it reaches the maxRange. One hit by a bullet will decrease the bot's HealthPoints by 2 (of max 10). Any change in this setting has to be done in the `Engine.elm` file at the moment.
 
 #### TURN Directions
 
@@ -80,7 +81,8 @@ Conditions are defined as types in `Model.elm` and can be used in the `WHILE` an
 |`Always`         |Always evaluates to True.|
 |`Not Cond`      |Negates `Cond`.|
 
-> [!NOTE] `WALLAHEAD`, and `ENEMYAHEAD` are limited by the bot's view range, which is set to 4 tiles at the moment.
+> [!NOTE]
+> `WALLAHEAD`, and `ENEMYAHEAD` are limited by the bot's view range, which is set to 4 tiles at the moment.
 
 #### Examples
 
