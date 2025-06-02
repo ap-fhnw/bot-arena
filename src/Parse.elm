@@ -146,7 +146,6 @@ lazyInstr thunk =
     ignoreLeft spaces (lazy thunk) -- removes spaces before
 
 -- Parser
-
 parseCond : Parser Cond
 parseCond = oneOf
         [ map Not (ignoreLeft (token "NOT") (lazy (\_ -> parseCond)))
@@ -164,10 +163,23 @@ parseTurnDir = oneOf
     , map (\_ -> Model.STRAIGHT)  (token "STRAIGHT")
     ]
 
+parseBlock : Parser Instr
+parseBlock = ignoreLeft (token "[") (many (lazyInstr (\_ -> parseInstr))) 
+    |> andThen 
+        (\instrs -> ignoreLeft spaces (token "]")
+            |> map (\_ -> case instrs of
+                [] -> NoOp
+                _  -> Seq instrs
+            )
+        )
+
 parseInstr : Parser Instr
-parseInstr = oneOf
+parseInstr = oneOf 
+        [ 
+        parseBlock
+        
         -- IF cond THEN instr ELSE instr
-        [ ignoreLeft (token "IF") parseCond
+        , ignoreLeft (token "IF") parseCond
             |> andThen (\cond -> ignoreLeft (token "THEN") (lazyInstr (\_ -> parseInstr))
                     |> andThen (\thenInstr -> ignoreLeft (token "ELSE") (lazyInstr (\_ -> parseInstr))
                             |> map (\elseInstr -> IfThenElse cond thenInstr elseInstr
