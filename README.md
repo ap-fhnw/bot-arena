@@ -1,27 +1,36 @@
 # Bot arena
 
-Pure functional bot arena game with Game Queue and ACTIONS.
+A pure functional bot arena game with Game Queue and ACTIONS.
 
-Current 2 Variants are evaluated:
-1. TUI with brick in Haskell
-2. GUI with ELM in Webbrowser rendering HTML tables
+This game is written in Elm, with three main parts:
+1. **Parser**: Parses the user typed commands. The parsed commands are then stored in the bot's program queue.
+2. **Interpreter**: The interpreter implements the bot instructions and updates the game state.
+3. **View**: The view takes the game's state and renders it to the screen.
 
-## 1
-Build and Start with:
-``` sh
-cabal update
-cabal build
-cabal run
-```
+## Installation and Prerequsites
 
-Create grid size dynamically with:
-``` sh
-cabal run bot-arena-tui -- 50 50 #row column
-```
+TODO
 
-## 2
+## Build and Run
 Build and Start with:
 ``` sh
 elm make src/Main.elm --output=main.js
 elm-live src/Main.elm --open -- --output=main.js
 ```
+
+## Gameplay
+
+### Commands
+
+|Command          |Effect|
+|-----------------------|------|
+|`MOVE n`               |Moves the bot ahead by n in the current direction, stored in Model.BotEntity.dirDeg|
+|`TURN dir`             |Turns the Bot direction `RIGHT\|LEFT\|AROUND\|STRAIGHT`|
+|`FIRE`                 |Triggers the bot to fire in the direction it is looking|
+|`SCAN`                 |Scans bot's surroundings in a radar-like manner|
+|`REPEAT n instr`       |Repeats given `instr`, `n`-times|
+|`WHILE cond DO instr`  ||
+|`IF-THEN-ELSE`         ||
+
+
+## Features which are planned
