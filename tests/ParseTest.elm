@@ -101,5 +101,4 @@ tests = describe "parseBotScript"
                 |> Expect.equal
                     ( Just <| Repeat 10 (IfThenElse WallAhead (Turn RIGHT) (Move 1)) )
         ]
-
     ]
