@@ -162,10 +162,10 @@ evalCond w b cond =
         EnemyAhead ->
             -- Check if there is an enemy bot in front of the bot
             let
-                viewLength = 4
+                viewRange = 4
                 ((dx, dy), (x, y)) = getBotDirAndPos b
                 checkPositions = 
-                    List.range 1 viewLength
+                    List.range 1 viewRange
                         |> List.map (\dist -> (x + dist * dx, y + dist * dy))
                 
                 -- Check for walls
