@@ -37,7 +37,7 @@ To interact with the bot, you need to type commands in the left input field. If 
 - Click `Run` to execute the program.
 - Click `Run Step` to execute one step of the program.
 
-You have the possiblity to define the `tick` speed in the `Tick` regulator. Moreover you are able to pause the game and resume it later by using the `Pause` / `Run` button.
+You can define the tick speed using the `Tick` slider. Moreover you are able to pause the game and resume it later by using the `Pause` / `Run` button.
 
 You can also enable the options to automatically parse (auto-load) and run (auto-run) your script.
 
@@ -80,7 +80,6 @@ Conditions are defined as types in `Model.elm` and can be used in the `WHILE` an
 |`Always`         |Always evaluates to True.|
 |`Not Cond`      |Negates `Cond`.|
 
-
 > [!NOTE] `WALLAHEAD`, and `ENEMYAHEAD` are limited by the bot's view range, which is set to 4 tiles at the moment.
 
 #### Examples
@@ -100,3 +99,4 @@ Though the game is functional, there are still many improvements and features th
 - **Code Blocks**: Incorporating whole code blocks in `REPEAT`, `WHILE`, and `IF` commands to allow for more complex bot behaviors - as of now, only single instructions are supported.
 - **Bot Execution Stack**: Implementing a stack to manage the execution of bot commands, allowing for nested commands and better control flow.
 - **FIRE Animation**: Adding a visual representation of the firing action, such as a bullet sprite that moves in the direction of the bot's facing.
+- **Win condition**: Now, the win condition is only implicit and not enforced/celebrated by the application. Some feedback and "game over" animation will make it feel more complete.
