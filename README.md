@@ -1,8 +1,8 @@
-# Bot arena
+# Bot Arena, the little functional programming game
 
 A pure functional bot arena game with Game Queue and ACTIONS.
 
-![](./bot-arena-ui.jpg)
+![Screenshot](./Screenshot.jpg)
 
 This game is written in Elm, with three main parts:
 1. **Parser**: Parses the user typed commands. The parsed commands are then stored in the bot's program queue.
