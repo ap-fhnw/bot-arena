@@ -5,6 +5,7 @@ import Model exposing (Cond(..))
 import Model exposing (BotEntity)
 import Model exposing (TurnDir(..))
 
+-- Helper functions 
 getObjPos : Obj -> Model.Coord
 getObjPos obj =
     case obj of
@@ -12,7 +13,6 @@ getObjPos obj =
         HealPack coord _ -> coord
         Bot entity       ->  entity.pos
 
--- Helper functions 
 isInRadarRange : BotEntity -> List (Obj) -> Int -> Bool
 isInRadarRange bot objs n = 
     let
@@ -28,6 +28,7 @@ isInRadarRange bot objs n =
             distanceSquared <= n * n
     ) objs
 
+-- Check whether Coordinate is within bounds
 isInBounds : World -> Model.Coord -> Bool
 isInBounds w c =
     let
@@ -35,6 +36,7 @@ isInBounds w c =
     in
     x >= 0 && x < Tuple.second(w.arena.size) && y >= 0 && y < Tuple.first(w.arena.size)
 
+-- Check if bot is alive
 liveBotAt : BotEntity -> Model.Coord -> Bool
 liveBotAt bot coord =
     bot.alive && bot.pos == coord
@@ -69,7 +71,7 @@ getBotDirAndPos bot =
     in
     (dirVec, bot.pos)
 
--- Helper function to calculate movement with collision detection
+-- Calculate movement with collision detection
 moveBot : World -> BotEntity -> Int -> Model.Coord
 moveBot w b steps =
     if not b.alive then
@@ -156,6 +158,7 @@ fire w b =
     in
     bulletPath 1 (x + dx) (y + dy) [] |> List.reverse
 
+-- Evaluate conditions
 evalCond : World -> BotEntity -> Cond -> Bool
 evalCond w b cond =
     case cond of
