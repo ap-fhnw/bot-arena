@@ -89,6 +89,7 @@ tests = describe "parseBotScript"
                                 (Turn RIGHT)
                                 (Move 1)
                         )
+                    
         , test "multiline REPEAT + IF Block" <|
             \_ ->
                 parse """
@@ -96,11 +97,9 @@ tests = describe "parseBotScript"
                     IF WALLAHEAD
                         THEN TURN RIGHT
                     ELSE MOVE 1
-                """ of
-                    Ok instrs ->
-                        Expect.equal instrs [ Repeat 10 (IfThenElse WallAhead (Turn RIGHT) (Move 1)) ]
-                    Err msg ->
-                        Expect.fail ("Parser error: " ++ msg)
+                """
+                |> Expect.equal
+                    ( Just <| Repeat 10 (IfThenElse WallAhead (Turn RIGHT) (Move 1)) )
         ]
 
     ]
