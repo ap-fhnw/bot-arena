@@ -33,9 +33,9 @@ tests = describe "Fehlermeldungen des Parsers"
     , test "Ende vom Block fehlt" <|
             \_ ->
                 run "["
-                    |> Expect.equal (Err "Expected character ']', but got end of input")
+                    |> Expect.equal (Err "Missing ']'")
     , test "Anfang vom Block fehlt" <|
             \_ ->
                 run "]"
-                    |> Expect.equal (Err "No alternatives matched")
+                    |> Expect.equal (Err "Expected character '[', before ']'")
     ]
