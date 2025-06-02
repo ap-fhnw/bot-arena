@@ -5,6 +5,7 @@ import Model exposing (Cond(..))
 import Model exposing (BotEntity)
 import Model exposing (TurnDir(..))
 
+-- Helper functions 
 getObjPos : Obj -> Model.Coord
 getObjPos obj =
     case obj of
@@ -12,7 +13,6 @@ getObjPos obj =
         HealPack coord _ -> coord
         Bot entity       ->  entity.pos
 
--- Helper functions 
 isInRadarRange : BotEntity -> List (Obj) -> Int -> Bool
 isInRadarRange bot objs n = 
     let
@@ -28,6 +28,7 @@ isInRadarRange bot objs n =
             distanceSquared <= n * n
     ) objs
 
+-- Check whether Coordinate is within bounds
 isInBounds : World -> Model.Coord -> Bool
 isInBounds w c =
     let
@@ -35,6 +36,7 @@ isInBounds w c =
     in
     x >= 0 && x < Tuple.second(w.arena.size) && y >= 0 && y < Tuple.first(w.arena.size)
 
+-- Check if bot is alive
 liveBotAt : BotEntity -> Model.Coord -> Bool
 liveBotAt bot coord =
     bot.alive && bot.pos == coord
@@ -69,7 +71,7 @@ getBotDirAndPos bot =
     in
     (dirVec, bot.pos)
 
--- Helper function to calculate movement with collision detection
+-- Calculate movement with collision detection
 moveBot : World -> BotEntity -> Int -> Model.Coord
 moveBot w b steps =
     if not b.alive then
@@ -118,16 +120,17 @@ turnBot b n =
         LEFT     -> modBy 360 (b.dirDeg - 90)
         AROUND   -> modBy 360 (b.dirDeg + 180)
 
-fire : World -> BotEntity -> Int -> List Model.Coord
-fire w b n =
+fire : World -> BotEntity -> List Model.Coord
+fire w b =
     if not b.alive then
         [] -- Can't Shoot at anything, I'm dead
     else
     let
+        fireRange = 4 
         ((dx, dy), (x, y)) = getBotDirAndPos b
         bulletPath : Int -> Int -> Int -> List Model.Coord -> List Model.Coord
         bulletPath currentDist currentX currentY acc = 
-            if currentDist > n then
+            if currentDist > fireRange then
                 acc
             else
                 let
@@ -155,16 +158,17 @@ fire w b n =
     in
     bulletPath 1 (x + dx) (y + dy) [] |> List.reverse
 
+-- Evaluate conditions
 evalCond : World -> BotEntity -> Cond -> Bool
 evalCond w b cond =
     case cond of
         EnemyAhead ->
             -- Check if there is an enemy bot in front of the bot
             let
-                viewLength = 4
+                viewRange = 4
                 ((dx, dy), (x, y)) = getBotDirAndPos b
                 checkPositions = 
-                    List.range 1 viewLength
+                    List.range 1 viewRange
                         |> List.map (\dist -> (x + dist * dx, y + dist * dy))
                 
                 -- Check for walls
@@ -220,7 +224,7 @@ executeInstr w b instr = case instr of
     -- Scan environment, radarlike with radius
     Scan   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
     -- Fire at coordinate --> see run world function
-    Fire ->  { b | pc = b.pc + 1, fireAt = fire w b b.range }
+    Fire ->  { b | pc = b.pc + 1, fireAt = fire w b }
     -- If-then-else instruction
     IfThenElse cond ifTrue ifFalse ->
         if evalCond w b cond then
@@ -238,7 +242,7 @@ executeInstr w b instr = case instr of
                     Move n -> { b | pos = moveBot w b n }
                     Turn n -> { b | dirDeg = turnBot b n }
                     Scan -> { b | viewEnv = scanEnvironment w b }
-                    Fire -> { b | pc = b.pc + 1 } -- Fire does not change the bot state
+                    Fire -> { b | pc = b.pc, fireAt = fire w b } -- Fire does not change the bot state
                     _ -> { b | pc = b.pc + 1 } -- No operation, just move to next instruction
 
                 -- Create a new Instruction list with the body repeated
@@ -335,7 +339,10 @@ tick world =
             updatedBots
                 |> List.map (\bot ->
                     if List.member bot.id hitIds then
-                        { bot | alive = False, hp = 0 } -- Bot is hit and dies
+                        let
+                            newHp = max 0 (bot.hp - 2)
+                            in
+                            { bot | hp = newHp, alive = newHp > 0 } -- Lower hp
                     else
                         bot
                 )
