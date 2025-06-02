@@ -124,11 +124,11 @@ fire w b =
         [] -- Can't Shoot at anything, I'm dead
     else
     let
-        maxRange = 5 
+        fireRange = 4 
         ((dx, dy), (x, y)) = getBotDirAndPos b
         bulletPath : Int -> Int -> Int -> List Model.Coord -> List Model.Coord
         bulletPath currentDist currentX currentY acc = 
-            if currentDist > maxRange then
+            if currentDist > fireRange then
                 acc
             else
                 let
