@@ -20,6 +20,7 @@ createBot id name pos dir pgr =
     , range = 5
     , program = pgr
     , pc = 0
+    , execStack = []
     , alive = True
     , viewEnv = [] 
     , fireAt = []

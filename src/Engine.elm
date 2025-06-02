@@ -215,93 +215,105 @@ evalCond w b cond =
         Not c ->
             not (evalCond w b c)
 
+
+
+executeStackInstr : World -> BotEntity -> Bool -> Instr -> BotEntity
+executeStackInstr w b fromStack instr =
+    let
+        updatedPc = if fromStack then b.pc else b.pc + 1
+    in
+    case instr of
+        Move n -> { b | pc = updatedPc, pos = moveBot w b n }
+        Turn n -> { b | pc = updatedPc, dirDeg = turnBot b n }
+        Scan -> { b | pc = updatedPc, viewEnv = scanEnvironment w b }
+        Fire -> { b | pc = updatedPc, fireAt = fire w b }
+        _ -> executeInstr w { b | pc = updatedPc } instr
+
 executeInstr : World -> BotEntity -> Instr -> BotEntity
 executeInstr w b instr = case instr of
     -- Move as long as there is no wall or object in the way
-    Move n -> { b | pc = b.pc + 1, pos = moveBot w b n}
+    Move n -> 
+        if List.isEmpty b.execStack then
+            executeStackInstr w b False (Move n)
+        else
+            executeStackInstr w b True (Move n)
     -- Turn RIGHT, LEFT or AROUND
-    Turn n  -> { b | pc = b.pc + 1, dirDeg = turnBot b n }
+    Turn n  -> 
+        if List.isEmpty b.execStack then
+            executeStackInstr w b False (Turn n)
+        else
+            executeStackInstr w b True (Turn n)
     -- Scan environment, radarlike with radius
-    Scan   -> { b | pc = b.pc + 1, viewEnv = scanEnvironment w b }
+    Scan   ->
+        if List.isEmpty b.execStack then
+            executeStackInstr w b False Scan
+        else
+            executeStackInstr w b True Scan
     -- Fire at coordinate --> see run world function
-    Fire ->  { b | pc = b.pc + 1, fireAt = fire w b }
+    Fire ->  
+        if List.isEmpty b.execStack then
+            executeStackInstr w b False Fire
+        else
+            executeStackInstr w b True Fire
     -- If-then-else instruction
     IfThenElse cond ifTrue ifFalse ->
         if evalCond w b cond then
-            insertInstrAtNextPc ifTrue b
+            { b | execStack = ifTrue :: b.execStack }
         else
             -- If condition is false, execute the false branch
-            insertInstrAtNextPc ifFalse b
+            { b | execStack = ifFalse :: b.execStack }
 
     -- While loop
     While cond body ->
         if evalCond w b cond then
             -- If condition is true, execute the body
-            let
-                botAfterBody = case body of
-                    Move n -> { b | pos = moveBot w b n }
-                    Turn n -> { b | dirDeg = turnBot b n }
-                    Scan -> { b | viewEnv = scanEnvironment w b }
-                    Fire -> { b | pc = b.pc, fireAt = fire w b } -- Fire does not change the bot state
-                    _ -> { b | pc = b.pc + 1 } -- No operation, just move to next instruction
-
-                -- Create a new Instruction list with the body repeated
-                newProgram = List.take (b.pc) b.program ++ (While cond body :: List.drop (b.pc + 1) b.program)
-            in
-                -- Insert the repeated instructions at the current position
-                { botAfterBody | program = newProgram }
-            -- If condition is false, just skip to the next instruction
-            else
-                { b | pc = b.pc + 1 }
+            { b | execStack = body :: (While cond body) :: b.execStack }
+        else
+            { b | pc = b.pc + 1 }
 
     -- Repeat instruction
     Repeat n body ->
         if n > 0 then
             let
-                -- Execute the first body instruction immediately
-                botAfterFirstExecution = executeInstr w b body
-
-                -- Create a list with remaining n-1 repetitions
-                remainingRepeats =
+                newStack = 
                     if n > 1 then
-                        List.repeat (n - 1) body
+                        body :: Repeat (n - 1) body :: b.execStack
                     else
-                        []
-
-                -- Construct the new program with remaining repetitions
-                newProgram =
-                    if List.isEmpty remainingRepeats then
-                        -- No remaining repeats, just continue with the original program
-                        botAfterFirstExecution.program
-                    else
-                        -- Insert remaining repeats after the current position
-                        List.take (b.pc + 1) b.program ++
-                        remainingRepeats ++
-                        List.drop (b.pc + 1) b.program
+                        body :: b.execStack
             in
-            -- Return the bot after executing the first instruction
-            { botAfterFirstExecution | program = newProgram }
+            { b | execStack = newStack }
         else
             -- Skip the repeat if n is 0
             { b | pc = b.pc + 1 }
+    Seq instrs ->
+        case instrs of
+            [] -> 
+                -- Empty sequence, just advance the program counter
+                { b | pc = b.pc + 1 }
+            (instuction :: rest) ->
+                let
+                    newStack = 
+                        List.foldl (\i stack -> i :: stack) b.execStack rest
+                in
+                executeInstr w { b | execStack = newStack } instuction
 
     -- No instruction or end of program
     _ -> { b | pc = b.pc + 1 }
 
--- Used in If-Then-Else Conditional
-insertInstrAtNextPc : Instr -> BotEntity -> BotEntity
-insertInstrAtNextPc instr bot =
-    let
-        newProgram = List.take (bot.pc + 1) bot.program ++ (instr :: List.drop (bot.pc + 1) bot.program)
-    in
-    { bot | pc = bot.pc + 1, program = newProgram }
-
 runBot : World -> BotEntity -> BotEntity
-runBot w b = 
-    let
-        currentInstr = List.drop b.pc b.program |> List.head |> Maybe.withDefault NoOp
-    in
-    executeInstr w b currentInstr
+runBot w b = case b.execStack of
+        (instr :: rest) ->
+            let
+                botWithUpdatedStack = { b | execStack = rest }
+            in
+            executeInstr w botWithUpdatedStack instr
+        [] -> 
+            let
+                currentInstr = List.drop b.pc b.program 
+                    |> List.head 
+                    |> Maybe.withDefault NoOp
+            in 
+            executeInstr w b currentInstr
 
 run : World -> (List BotEntity, List Model.BotId)
 run w =
