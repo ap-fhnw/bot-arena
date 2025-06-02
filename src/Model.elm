@@ -48,7 +48,7 @@ type Instr
     = Move Int           -- Felder vorwärts
     | Turn TurnDir       -- Grad (+ = rechts)
     | Scan               -- Feld-of-View -> Event
-    | Fire Int           -- Rel. Distance to enemy (0 = self -> commit suicide 😳)
+    | Fire               -- Rel. Range and Distance to enemy
     | NoOp
     | Repeat Int Instr
     | IfThenElse Cond Instr Instr
@@ -68,6 +68,7 @@ type alias BotEntity =
     , pos        : Coord
     , dirDeg     : Int               -- 0 = Norden
     , hp         : Int
+    , range      : Int
     , program    : List Instr       -- Ergebnis des Parsers
     , pc         : Int              -- Program-Counter
     , alive      : Bool

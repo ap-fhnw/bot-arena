@@ -21,20 +21,15 @@ tests = describe "parseBotScript"
                 parse "MOVE 3"
                     |> Expect.equal (Just <| Move 3)
 
-        , test "TURN" <|
-            \_ ->
-                parse "TURN LEFT"
-                    |> Expect.equal (Just <| Turn LEFT)
-
-        ,describe "TURN LEFT/RIGHT/BEHIND"
+        ,describe "TURN LEFT/RIGHT/AROUND/STRAIGHT"
             [ test "LEFT" <|
-                \_ -> parse "TURN LEFT"   |> Expect.equal (Just <| Turn -90)
-
+                \_ -> parse "TURN LEFT"     |> Expect.equal (Just <| Turn LEFT)
             , test "RIGHT" <|
-                \_ -> parse "TURN RIGHT"  |> Expect.equal (Just <| Turn 90)
-
-            , test "BEHIND" <|
-                \_ -> parse "TURN BEHIND" |> Expect.equal (Just <| Turn 180)
+                \_ -> parse "TURN RIGHT"    |> Expect.equal (Just <| Turn RIGHT)
+            , test "AROUND" <|
+                \_ -> parse "TURN AROUND"   |> Expect.equal (Just <| Turn AROUND)
+            , test "STRAIGHT" <|
+                \_ -> parse "TURN STRAIGHT" |> Expect.equal (Just <| Turn STRAIGHT)
             ]
 
         , test "SCAN" <|
@@ -44,8 +39,8 @@ tests = describe "parseBotScript"
 
         , test "FIRE" <|
             \_ ->
-                parse "FIRE 1"
-                    |> Expect.equal (Just <| Fire 1)
+                parse "FIRE"
+                    |> Expect.equal (Just <| Fire)
 
         , test "NOOP / NOTHING" <|
             \_ ->
@@ -59,11 +54,11 @@ tests = describe "parseBotScript"
 
         , test "IF … THEN … ELSE …" <|
             \_ ->
-                parse "IF ENEMYAHEAD THEN FIRE 1 ELSE MOVE 2"
+                parse "IF ENEMYAHEAD THEN FIRE ELSE MOVE 2"
                     |> Expect.equal
                         (Just <|
                             IfThenElse EnemyAhead
-                                (Fire 1)
+                                (Fire)
                                 (Move 2)
                         )
 
@@ -96,14 +91,13 @@ tests = describe "parseBotScript"
                         )
         , test "multiline REPEAT + IF Block" <|
             \_ ->
-                case parseBotScript """
+                parse """
                 REPEAT 10
                     IF WALLAHEAD
                         THEN TURN RIGHT
                     ELSE MOVE 1
                 """
                 |> Expect.equal
-                    [ Repeat 10 (IfThenElse WallAhead (Turn RIGHT) (Move 1)) ]
-
-                ]
+                    ( Just <| Repeat 10 (IfThenElse WallAhead (Turn RIGHT) (Move 1)) )
+        ]
     ]
