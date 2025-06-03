@@ -71,9 +71,9 @@ renderView model = (main_
                 , input
                     [ type_ "range"
                     , value (toString model.tickMs)
-                    , Html.Styled.Attributes.min "100"
+                    , Html.Styled.Attributes.min "10"
                     , Html.Styled.Attributes.max "3000"
-                    , Html.Styled.Attributes.step "100"
+                    , Html.Styled.Attributes.step "10"
                     , onInput (\s -> SetTicks (Maybe.withDefault 500 (String.toFloat s)))
                     ] []
                 ]
