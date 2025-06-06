@@ -92,6 +92,22 @@ WHILE NOT WALLAHEAD DO MOVE 1
 
 -- Turn as long as there is no enemy ahead
 WHILE NOT ENEMYAHEAD DO TURN RIGHT
+
+-- Using nested commands to give "some" intelligence to the bot
+WHILE TRUE DO [
+  IF ENEMYAHEAD THEN 
+  [
+     WHILE ENEMYAHEAD 
+     DO FIRE
+  ]
+  ELSE 
+    MOVE 1
+  IF WALLAHEAD THEN 
+    TURN LEFT 
+  ELSE
+    MOVE 1
+]
+
 ```
 
 ## Outlook for future development
@@ -99,6 +115,6 @@ WHILE NOT ENEMYAHEAD DO TURN RIGHT
 Though the game is functional, there are still many improvements and features that can be added. We consider the following areas for future development:
 
 - **Code Blocks**: Incorporating whole code blocks in `REPEAT`, `WHILE`, and `IF` commands to allow for more complex bot behaviors - as of now, only single instructions are supported.
-- **Bot Execution Stack**: Implementing a stack to manage the execution of bot commands, allowing for nested commands and better control flow.
+- **Bot Execution Stack**: Optimize the stack execution of the bot, ensuring that nested commands are handled correctly and efficiently. 
 - **FIRE Animation**: Adding a visual representation of the firing action, such as a bullet sprite that moves in the direction of the bot's facing.
 - **Win condition**: Now, the win condition is only implicit and not enforced/celebrated by the application. Some feedback and "game over" animation will make it feel more complete.

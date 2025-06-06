@@ -72,6 +72,7 @@ type alias BotEntity =
     , range      : Int
     , program    : List Instr       -- Ergebnis des Parsers
     , pc         : Int              -- Program-Counter
+    , execStack  : List Instr  -- Stack für Call/Return
     , alive      : Bool
     , fireAt     : List Coord
     , viewEnv    : List (Coord, Obj)
