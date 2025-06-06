@@ -108,7 +108,7 @@ beginnerWorld m = let (script, err) = unpackScript m in
             """)
         ]
     , arena =
-        { size = (8, 8)
+        { size = (18, 18)
         , goAround = False
         , maxHp = 10
         , seed = 0
@@ -123,7 +123,7 @@ prisonWorld m = let (script, err) = unpackScript m in
     , error = err
     , bots = 
         [ createBot 1 "Foo" (3, 2) 180 script
-        , createBot 2 "Bar" (4, 5) 0 (parseBotScriptSave """
+        , createBot 2 "Bar" (3, 4) 0 (parseBotScriptSave """
             MOVE 1
             TURN right
             FIRE
@@ -133,21 +133,49 @@ prisonWorld m = let (script, err) = unpackScript m in
             """)
         ]
     , arena =
-        { size = (7, 7)
+        { size = (8, 8)
         , goAround = False
         , maxHp = 10
         , seed = 0
-        , objects = List.map Wall ((List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (0, i + 1)))
+        , objects = List.map Wall ((List.repeat 8 [(0, 0)] |> List.indexedMap (\i _-> (0, i)))
             ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (i, 0)))
-            ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (i + 1, 7)))
-            ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (7, i))))
+            ++ (List.repeat 8 [(0, 0)] |> List.indexedMap (\i _-> (i, 7)))
+            ++ (List.repeat 8 [(0, 0)] |> List.indexedMap (\i _-> (7, i))))
         }
     }
 
+prisonWorldc : Model -> World
+prisonWorldc m = let (script, err) = unpackScript m in
+    { tick = 0
+    , queue = []
+    , error = err
+    , bots = 
+        [ createBot 1 "Foo" (1, 1) 180 script
+        , createBot 2 "Bar" (3, 4) 0 (parseBotScriptSave """
+            MOVE 1
+            TURN right
+            FIRE
+            MOVE 1
+            TURN right
+            FIRE
+            """)
+        ]
+    , arena =
+        { size = (3, 3)
+        , goAround = False
+        , maxHp = 10
+        , seed = 0
+        , objects = List.map Wall ((List.repeat 8 [(0, 0)] |> List.indexedMap (\i _-> (0, i)))
+            ++ (List.repeat 7 [(0, 0)] |> List.indexedMap (\i _-> (i, 0)))
+            ++ (List.repeat 8 [(0, 0)] |> List.indexedMap (\i _-> (i, 7)))
+            ++ (List.repeat 8 [(0, 0)] |> List.indexedMap (\i _-> (7, i))))
+        }
+    }
 loadScript : Model -> World
 loadScript m = case m.arena of
     "beginner" -> beginnerWorld m
     "prison" -> prisonWorld m
+    "prisonc" -> prisonWorldc m
     _ -> beginnerWorld m
 
 -- MAIN
