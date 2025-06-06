@@ -4,8 +4,8 @@ import Debug exposing (toString)
 import Css exposing (..)
 import Html
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (css, spellcheck, value, type_, attribute)
-import Html.Styled.Events exposing (onClick, onInput, onCheck)
+import Html.Styled.Attributes exposing (css, spellcheck, value, attribute)
+import Html.Styled.Events exposing (onClick, onInput)
 import Model exposing (..)
 import Styles exposing (..)
 import Css.Global exposing (global, html, body)
@@ -15,149 +15,81 @@ import Time
 import Html.Styled.Attributes exposing (placeholder)
 import Regex exposing (..)
 import Maybe exposing (withDefault)
+import Components exposing (..)
 
 type Cell = B BotEntity | O Obj | Empty
-
-listBots : List { a | name : String } -> String
-listBots bots = (bots |> List.map (\b -> b.name ) |> String.join " vs. ")
 
 renderView : Model -> Html.Html Msg
 renderView model = (main_
     [ css
-    [ grid
-    , property "grid-template" "'editor map' auto / 1fr auto"
-    , padding (Css.em 1)
-    , height (pct 100)
-    , boxSizing borderBox
-    , fontFamilies [.value monospace]
-    ]]
+        [ displayGrid
+        , property "grid-template" "'editor map' auto / 1fr auto"
+        , padding (Css.em 1)
+        , height (pct 100)
+        , boxSizing borderBox
+        , fontFamilies [.value monospace]
+        ]
+    ]
     [ global
         [ html [ property "color-scheme" "light dark" ]
         , body [ height (vh 100) ]
         ]
-    , editor model [ property "grid-area" "editor"
-        , height (pct 100)
-        , overflow scroll ]
-    , div
+    , renderEditor model 
+    , grid
         [ css
-        [ property "grid-area" "map"
-        , grid
-        , property "grid-template-rows" "auto 1fr auto"
-        , height (pct 100)
-        , overflow scroll
-        ]]
-        [   Html.Styled.table
-            [ css
-            [ borderCollapse collapse
-            , margin auto
-            , outsetBorder
-            ]]
-            ((List.range 0 (Tuple.second model.world.arena.size))
-                |> List.map (renderRow model.world))
-        , debugOutput
-            [ css 
-                [ displayFlex
-                , flexDirection column
-                , overflow scroll
-                , lineHeight (num 1.5)
-                ]
+            [ property "grid-area" "map"
+            , gridTemplateRows "auto 1fr auto"
+            , Styles.scroll
             ]
-            [ setting []
-                [ text "Auto-load"
-                , input [ type_ "checkbox", onCheck AutoLoad, Html.Styled.Attributes.checked model.autoLoad ] []] 
-            , setting []
-                [ text "Auto-run"
-                , input [ type_ "checkbox", onCheck AutoRun, Html.Styled.Attributes.checked model.autoRun ] []]
-            , setting []
-                [ text ("Tick " ++ (toString model.tickMs) ++ "ms")
-                , input
-                    [ type_ "range"
-                    , value (toString model.tickMs)
-                    , Html.Styled.Attributes.min "10"
-                    , Html.Styled.Attributes.max "3000"
-                    , Html.Styled.Attributes.step "10"
-                    , onInput (\s -> SetTicks (Maybe.withDefault 500 (String.toFloat s)))
-                    ] []
-                ]
-            , setting []
-                [ text "Display process"
-                , input [ type_ "checkbox", onCheck ToggleProcess, Html.Styled.Attributes.checked model.showParseResult ] []
-                ]
-            , setting []
-                [ text "Arena"
-                , select
-                    [ onInput SetArena
-                    , value model.arena
-                    , css 
-                        [ margin2 (px 4) (px 0)
-                        , padding2 (px 4) (px 6)
-                        ]
-                    ]
-                    [ option [value "beginner"] [text "Beginner vs. Bar"]
-                    , option [value "prison"] [text "Prison vs. Baz"]
-                    ]
-                ]
-            ]
+        ]
+        [ renderWorld model
+        , renderSettings model    
         , actionRow []
             [ btn [ onClick RunPause ] [ text (if model.isRunning then "Pause" else "Run")]
-            , btn [ onClick (RunStep False) ] [ text "Run Step" ] ]
-    ]]) 
-    |> toUnstyled
-
-editor : Model -> List Style -> Html Msg
-editor model style =
-    div
-        [ css ([ grid, property "grid-template-rows" "auto 1fr" ] ++ style) ]
-        [ debugOutput
-            [ css [ fontSize (Css.em 1.6), displayFlex, justifyContent center ]]
-            [ text (listBots model.world.bots) ]
-        , div
-            [ css
-            [ grid
-            , property "grid-template-columns" (if model.showParseResult then "1fr 1fr" else "1fr")
-            , property "grid-template-rows" "auto"
-            , height (pct 100), overflow scroll
-            ]]
-            ((if model.showParseResult
-                then [debugOutput
-                [ css 
-                    [ overflow scroll
-                    , lineHeight (num 1.5)
-                    , order (num 1)
-                    , grid
-                    , property "grid-template-rows" "auto auto 1fr"
-                    ]
-                ]
-                [ showPlayerBot model.world
-                , hr [css [ margin (px 0), width (pct 110), transform (translateX (pct -5))]] []
-                , text (Maybe.withDefault (showDebug model) <| model.world.error) ]]
-                else []) ++
-            [ textarea
-            [ onInput UpdateScript
-            , Html.Styled.Events.preventDefaultOn "beforeinput"
-                    ((D.field "inputType" D.string) |> D.andThen (\i -> D.succeed (NOOP, model.modifier && i == "insertLineBreak")))
-            , value model.script
-            , placeholder "MOVE 1\nTURN RIGHT\nFIRE\nREPEAT 3 MOVE 1\nIF ENEMYAHEAD THEN FIRE 1 ELSE TURN LEFT\nWHILE NOT LOWHP DO SCAN\n..."
-            , spellcheck False
-            , css
-                [ resize none
-                , fontSize (Css.em 1.5)
-                , padding (px 12)
-                , textTransform uppercase
-                , insetBorder
-                , lineHeight (num 1.5)
-                , margin (px 3)
-                ]
-            ] []
-            ])
-      , actionRow []
-        [ btn [ onClick StoreScript ] [ text ("Upload to " ++ (getBotName model.world.bots)) ] ]
+            , btn [ onClick (RunStep False) ] [ text "Run Step" ]
+            ]
         ]
 
-getBotName : List BotEntity -> String
-getBotName bots = case bots of
-    (bot :: _) -> bot.name
-    [] -> "Unkown Bot"
+    ]) 
+    |> toUnstyled
+
+renderSettings : Model -> Html Msg
+renderSettings model =
+    Styles.section
+      [ css 
+          [ displayFlex
+          , flexDirection column
+          , overflow Css.scroll
+          , lineHeight (num 1.5)
+          ]
+      ]
+      [ checkbox "Auto-load"
+          model.autoLoad AutoLoad
+      , checkbox "Auto-run"
+          model.autoRun AutoLoad
+      , range ("Tick " ++ (toString model.tickMs) ++ "ms")
+          (toString model.tickMs)
+          (\s -> SetTicks (Maybe.withDefault 500 (String.toFloat s)))
+          (100, 3000, 100)
+      , checkbox "Display process"
+          model.showParseResult ToggleProcess
+      , Components.select "Arena"
+          model.arena SetArena
+          [ ("beginner", "vs. Bar (Beginner Map)")
+          , ("prison", "vs. Baz (Prison)")
+          ]
+      ]
+
+renderWorld : Model -> Html Msg
+renderWorld model =
+    Html.Styled.table
+    [ css
+    [ borderCollapse collapse
+    , margin auto
+    , outsetBorder
+    ]]
+    ((List.range 0 (Tuple.second model.world.arena.size))
+        |> List.map (renderRow model.world))
 
 renderRow : World -> Int -> Html Msg
 renderRow world row =
@@ -188,30 +120,120 @@ renderBot bot w = div
     , property "display" "grid"
     , alignItems center
     ]]
-    [ Styles.pointer (toFloat bot.dirDeg)
+    [ Components.pointer (toFloat bot.dirDeg)
     , healthBarBase theme.healthBarBackground 100
     , healthBarBase theme.healthBarForeground (100 * toFloat bot.hp / toFloat w.arena.maxHp)
     , text (if bot.alive then "🤖" else "🪦")
     ]
 
-getObj : List Obj -> Coord -> Maybe Obj
-getObj os c = case os of
-    [] -> Maybe.Nothing
-    (o :: oss) -> case o of
-        Wall cc -> if c == cc then Just o else getObj oss c
-        _ -> getObj oss c
+renderWall : Html msg
+renderWall = div
+    [ css
+        [ backgroundColor theme.wall
+        , borderColor theme.wallBorder
+        , outsetBorder
+        , size (pct 100)
+        ]
+    ] []
 
-getBot : List BotEntity -> Coord -> Maybe BotEntity
-getBot bs c = case bs of
-    [] -> Maybe.Nothing
-    (b :: bss) -> if b.pos == c then Just b else getBot bss c
+renderEditor : Model -> Html Msg
+renderEditor model = grid
+    [ css
+        [ gridArea "editor"
+        , gridTemplateRows "auto 1fr"
+        , gap (px 8)
+        , Styles.scroll
+        ]
+    ]
+    [ Styles.section
+        [ css [ fontSize (Css.em 1.6), displayFlex, justifyContent center ]]
+        [ text (listBots model.world.bots) ]
+    , grid
+        [ css
+            [ gridTemplateCols (if model.showParseResult then "1fr 1fr" else "1fr")
+            , gridTemplateRows "auto"
+            , Styles.scroll
+            ]
+        ]
+        ((if model.showParseResult then [renderSidebar model] else [])
+            ++ [renderTextarea model])
+    , actionRow []
+    [ btn [ onClick StoreScript ] [ text ("Upload to " ++ (getBotName model.world.bots)) ] ]
+    ]
+
+
+renderTextarea : Model -> Html Msg
+renderTextarea model =
+    textarea
+        [ onInput UpdateScript
+        , Html.Styled.Events.preventDefaultOn "beforeinput"
+                ((D.field "inputType" D.string) |> D.andThen (\i -> D.succeed (NOOP, model.modifier && i == "insertLineBreak")))
+        , value model.script
+        , placeholder "MOVE 1\nTURN RIGHT\nFIRE 1\nREPEAT 3 MOVE 1\nIF ENEMYAHEAD THEN FIRE 1 ELSE TURN LEFT\nWHILE NOT LOWHP DO SCAN\n..."
+        , spellcheck False
+        , css
+            [ resize none
+            , fontSize (Css.em 1.5)
+            , padding (px 12)
+            , textTransform uppercase
+            , insetBorder
+            , lineHeight (num 1.5)
+            , margin (px 1)
+            ]
+        ] []
+
+renderSidebar : Model -> Html Msg
+renderSidebar model =
+    Styles.section
+        [ css 
+            [ displayGrid
+            , overflow Css.scroll
+            , lineHeight (num 1.5)
+            , width (pct 100)
+            , order (num 1)
+            , gridTemplateRows "auto auto 1fr"
+            ]
+        ]
+        [ showPlayerBotInfo model.world
+        , text (Maybe.withDefault (showDebug model) model.world.error)
+        ]
+
+listBots : List { a | name : String } -> String
+listBots bots = bots
+    |> List.map (\b -> b.name )
+    |> String.join " vs. "
+
+getBotName : List BotEntity -> String
+getBotName bots = case bots of
+    (bot :: _) -> bot.name
+    [] -> "Unkown Bot"
+
+getObj : List Obj -> Coord -> Maybe Cell
+getObj os c = os |> List.filterMap
+    (\o -> case o of
+        Wall cc -> if cc == c then Just (O o) else Nothing
+        _ -> Nothing
+    ) |> List.head
+
+getBot : List BotEntity -> Coord -> Maybe Cell
+getBot bs c = bs
+    |> List.filter (\b -> b.pos == c)
+    |> List.head |> Maybe.andThen (Just << B)
 
 cell : World -> Coord -> Cell
-cell world coord = case (getObj world.arena.objects coord) of
-    Just o -> O o
-    Maybe.Nothing -> case (getBot world.bots coord) of
-        Just b -> B b
-        _ -> Empty
+cell world coord = oneOf
+    (getBot world.bots coord)
+    (getObj world.arena.objects coord)
+
+oneOf : Maybe Cell -> Maybe Cell -> Cell
+oneOf a b = a |> Maybe.withDefault (b |> Maybe.withDefault Empty)
+
+showProgram : Int -> List Instr -> String
+showProgram pc is = case is of
+    [] -> "NO PROGRAM LOADED"
+    _ -> is
+        |> List.indexedMap (\i a -> (if i == pc then "→ " else " ") ++ showInstruction a)
+        |> List.foldr (\a b -> a ++ "\n" ++ b) ""
 
 showInstruction : Instr -> String
 showInstruction instruction =
@@ -255,33 +277,38 @@ showCond c = case c of
     Always -> "TRUE"
     Not inner -> "NOT " ++ showCond inner
 
-showProgram : Int -> List Instr -> String
-showProgram pc is = case is of
-    [] -> "NO PROGRAM LOADED"
-    _ -> is
-        |> List.indexedMap (\i a -> (if i == pc then "→ " else " ") ++ showInstruction a)
-        |> List.foldr (\a b -> a ++ "\n" ++ b) ""
-
-showPlayerBot : World -> Html Msg
-showPlayerBot w = case w.bots of
-    (b :: _) ->  fieldset
+showPlayerBotInfo : World -> Html Msg
+showPlayerBotInfo w = case w.bots of
+    (b :: _) -> div
         [ css
-        [ margin3 (px -8) (px -8) (px 4)
-        , border (px 0)
-        , padding (px 0)
-        , fontSize (Css.em 0.9)
-        , grid
-        , property "gap" "4px"
-        ]]
-        [ div [css[paddingLeft (px 2)]] [text b.name]
+            [ padding (Css.rem 0.5)
+            , backgroundColor theme.debugBg
+            , whiteSpace preWrap, fontFamily monospace
+            , outsetBorder,
+                margin3 (px -16) (px -16) (px 4)
+            , fontSize (Css.em 0.9)
+            , displayGrid
+            , gap (px 4)
+            ]
+        ]
+        [ div
+            [ css [ paddingLeft (px 2) ] ]
+            [ text b.name ]
         , meter 
-            [ value (toString b.hp)
-            , Html.Styled.Attributes.max (toString w.arena.maxHp)
+            [ (value << toString) b.hp
+            , (Html.Styled.Attributes.max << toString) w.arena.maxHp
             , attribute "low" "3"
             , attribute "optimum" "10"
             , attribute "high" "8"
             ] []
-        , div [css[paddingLeft (px 2), fontSize smaller]] [text ("PC " ++ (toString b.pc) ++ "\tPOS (" ++ (Tuple.first b.pos |> toString) ++ "," ++ (Tuple.second b.pos |> toString) ++ ")")]
+        , div
+            [ css
+                [ paddingLeft (px 2)
+                , fontSize smaller]
+            ]
+            [ text ("PC " ++ (toString b.pc)
+                ++ "\tPOS (" ++ (Tuple.first b.pos |> toString) ++ "," ++ (Tuple.second b.pos |> toString) ++ ")")
+            ]
         ]
     _ -> text "No INFO"
 
@@ -289,15 +316,6 @@ showDebug : Model -> String
 showDebug { world } = case world.bots of
     (playerBot::_) -> String.join "\n" [(showProgram playerBot.pc playerBot.program)]
     _ -> ""
-
-debugOutput : StyledElement msg
-debugOutput = styled div
-    [ padding (Css.em 1)
-    , backgroundColor theme.debugBg
-    , whiteSpace preWrap, fontFamily monospace
-    , fontSize (Css.em 1.3)
-    , outsetBorder
-    ]
     
 subscriptions : Model -> Sub Msg
 subscriptions m = Sub.batch
