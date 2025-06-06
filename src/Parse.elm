@@ -177,7 +177,7 @@ parseInstr : Parser Instr
 parseInstr = oneOf 
         [ 
         parseBlock
-        
+
         -- IF cond THEN instr ELSE instr
         , ignoreLeft (token "IF") parseCond
             |> andThen (\cond -> ignoreLeft (token "THEN") (lazyInstr (\_ -> parseInstr))
@@ -204,12 +204,39 @@ parseInstr = oneOf
 parseScript : Parser (List Instr)
 parseScript = map2 (\instrs _ -> instrs) (some (ignoreLeft spaces parseInstr)) (ignoreLeft spaces endOfInput) 
 
+validateBrackets : String -> Result String ()
+validateBrackets input =
+    let
+        step idx balance chars = case chars of
+            [] ->
+                if balance == 0 then
+                    Ok ()
+                else
+                    Err "Missing ']'"
+
+            c :: rest -> case c of
+                '[' -> step (idx + 1) (balance + 1) rest
+                ']' -> 
+                    if balance == 0 then
+                        Err "Expected character '[', before ']'"
+                    else
+                         step (idx + 1) (balance - 1) rest
+                _ -> step (idx + 1) balance rest
+    in
+        step 0 0 (String.toList input)
+
+
 -- Top level Parser
 parseBotScript : String -> Result String (List Instr)
-parseBotScript input =
-    parseScript (String.toUpper input)
-        |> Result.map Tuple.first
-        |> Result.mapError Tuple.second
+parseBotScript rawInput =
+    let
+        input = String.toUpper rawInput
+    in
+        case validateBrackets input of
+            Err msg -> Err msg
+            Ok () -> parseScript input
+                |> Result.map Tuple.first
+                |> Result.mapError Tuple.second
 
 parseBotScriptSave : String -> List Instr
 parseBotScriptSave = parseBotScript >> Result.withDefault []
