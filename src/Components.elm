@@ -31,13 +31,12 @@ select t v u options =  setting []
     [ text t
     , Html.Styled.select
         [ onInput u 
-        , value v
         , css 
             [ margin2 (px 4) (px 0)
             , padding2 (px 4) (px 6)
             ]
         ]
-        (List.map (\(a, b) -> (option [value a] [text b])) options)
+        (List.map (\(a, b) -> (option [value a, Html.Styled.Attributes.selected (a == v)] [text b])) options)
     ]
 
 range : String -> String -> (String -> msg) -> ( a, b, c ) -> Html msg
