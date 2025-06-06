@@ -16,6 +16,7 @@ import Html.Styled.Attributes exposing (placeholder)
 import Regex exposing (..)
 import Maybe exposing (withDefault)
 import Components exposing (..)
+import Svg.Styled.Attributes exposing (mode)
 
 type Cell = B BotEntity | O Obj | Empty
 
@@ -77,25 +78,30 @@ renderSettings model =
           model.arena SetArena
           [ ("beginner", "vs. Bar (Beginner Map)")
           , ("prison", "vs. Baz (Prison)")
+          , ("prisonc", "vs other")
           ]
       ]
 
 renderWorld : Model -> Html Msg
 renderWorld model =
-    Html.Styled.table
-    [ css
-    [ borderCollapse collapse
-    , margin auto
-    , outsetBorder
-    ]]
-    ((List.range 0 (Tuple.second model.world.arena.size))
-        |> List.map (renderRow model.world))
-
-renderRow : World -> Int -> Html Msg
-renderRow world row =
-    tr [] ((List.range 0 (Tuple.second world.arena.size))
-        |> List.map (\i -> (row, i))
-        |> List.map (renderCell world))
+    grid
+        [ css
+            [ gridTemplateCols ("repeat(" ++ (Tuple.second model.world.arena.size |> toString) ++ ", 1fr)")
+            , gridTemplateRows ("repeat(" ++ (Tuple.first model.world.arena.size |> toString) ++ ", 1fr)")
+            , property "gap" "0px"
+            , property "align-content" "center"
+            , margin auto
+            --, border3 (px 2) solid (rgb 250 0 0)
+            , width (px 500)
+            , height (px 500)
+            , outsetBorder
+            ]
+        ]
+        (let (h, w) = model.world.arena.size
+        in
+        (List.repeat ((h) * (w)) (0, 0)
+            |> List.indexedMap (\i _ -> (i // w, (modBy w i)))
+                |> List.map (renderCell model.world)))
 
 renderCell : World -> Coord -> Html Msg
 renderCell world pos = td
@@ -103,19 +109,18 @@ renderCell world pos = td
         [ padding (px 1)
         , textAlign center
         , border3 (px 1) solid theme.gridLines
-        , size (px 50)
         ]
     ]
     [ case cell world pos of
         B b -> renderBot b world
         O _ -> renderWall
-        Empty -> text ""
+        Empty -> text "" --((Tuple.first pos |> toString) ++ (Tuple.second pos |> toString) )
     ]
 
 renderBot : BotEntity -> World -> Html Msg
 renderBot bot w = div
     [ css [ transform (translateY (px 2))
-    , fontSize (Css.em 1.8)
+    , fontSize (Css.em (20 / (toFloat (Tuple.first w.arena.size))))
     , size (pct 100)
     , property "display" "grid"
     , alignItems center
