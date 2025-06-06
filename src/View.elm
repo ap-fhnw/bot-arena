@@ -13,6 +13,8 @@ import Json.Decode as D
 import Browser.Events as Events
 import Time
 import Html.Styled.Attributes exposing (placeholder)
+import Regex exposing (..)
+import Maybe exposing (withDefault)
 import Components exposing (..)
 import Svg.Styled.Attributes exposing (mode)
 
@@ -239,16 +241,38 @@ showProgram pc is = case is of
         |> List.foldr (\a b -> a ++ "\n" ++ b) ""
 
 showInstruction : Instr -> String
-showInstruction i = case i of
-    Move n -> "MOVE " ++ toString n
-    Turn n -> "TURN " ++ toString n 
-    Scan -> "SCAN"
-    Fire -> "FIRE"
-    Repeat n instr -> "REPEAT " ++ toString n ++ " " ++ showInstruction instr
-    IfThenElse cond i1 i2 -> "IF (" ++ showCond cond ++ ") ? " ++ showInstruction i1 ++ " : " ++ showInstruction i2
-    While cond instr -> "WHILE (" ++ showCond cond ++ ") " ++ showInstruction instr
-    Seq instrs -> "[ " ++ String.join "; " (List.map showInstruction instrs) ++ " ]"
-    _ -> "?"
+showInstruction instruction =
+    let
+        merge x xs = (x ++ Maybe.withDefault "" (List.head xs)) :: Maybe.withDefault [] (List.tail xs)
+        showBlock i = (toLines i |> List.head |> withDefault "") :: (toLines i |> List.tail |> withDefault [] |> indent)
+        indent n = List.map ((++) "  ") n
+
+        toLines instruct = case instruct of
+            NoOp -> ["Nothing"]
+            Move n -> ["MOVE " ++ toString n]
+            Turn n -> ["TURN " ++ toString n ]
+            Scan -> ["SCAN"]
+            Fire -> ["FIRE"]
+            Repeat n i -> case i of
+                Seq _ -> merge ("REPEAT " ++ toString n ++ " ") (toLines i)
+                _ -> merge ("REPEAT " ++ toString n ++ " ") (toLines i)
+            IfThenElse cond i1 i2 -> (case i1 of
+                Seq ins1 -> ("IF (" ++ showCond cond ++ ") ? [")
+                    :: (List.concatMap (toLines >> indent) ins1)
+                    ++ (case i2 of
+                        Seq ins2 -> "] : [" :: (List.concatMap (toLines >> indent) ins2) ++ ["]"]
+                        _ -> merge "] : " (toLines i2)
+                    )
+                _ -> ("IF (" ++ showCond cond ++ ")") :: merge "  ? " (toLines i1)
+                    ++ (case i2 of
+                    Seq ins2 -> "  : [" :: (List.concatMap (toLines >> indent >> indent) ins2) ++ ["  ]"]
+                    _ -> merge "  : " (toLines i2)))
+            While cond instr -> case instr of
+                Seq ins -> ("WHILE (" ++ showCond cond ++ ") DO [") :: (List.concatMap (toLines >> indent) ins) ++ ["]"]
+                _ -> ("WHILE (" ++ showCond cond ++ ")") :: (merge "  DO " ( (toLines instr)))
+            Seq ins -> "[" :: (List.concatMap (toLines >> indent) ins) ++ ["]"]
+    in
+        toLines instruction |> String.join "\n" --|> Regex.replace (withDefault Regex.never (Regex.fromString "(\\>\n\\s*)")) (\_ -> " ")
 
 showCond : Cond -> String
 showCond c = case c of

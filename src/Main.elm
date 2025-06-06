@@ -123,13 +123,15 @@ prisonWorld m = let (script, err) = unpackScript m in
     , error = err
     , bots = 
         [ createBot 1 "Foo" (3, 2) 180 script
-        , createBot 2 "Bar" (3, 4) 0 (parseBotScriptSave """
-            MOVE 1
-            TURN right
-            FIRE
-            MOVE 1
-            TURN right
-            FIRE
+        , createBot 2 "Bar" (4, 5) 0 (parseBotScriptSave """
+            while true do [
+                if enemyahead
+                    then [nothing fire]
+                else [
+                    turn left
+                    move 1
+                ]
+            ]
             """)
         ]
     , arena =
